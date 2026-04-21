@@ -1,7 +1,11 @@
-import { useRef, useEffect, useState } from 'react'
+import { useRef, useEffect, useState, forwardRef, useImperativeHandle } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import { RigidBody, CapsuleCollider, useRapier } from '@react-three/rapier'
 import * as THREE from 'three'
+
+export interface CharacterControllerHandle {
+  teleport: () => void
+}
 
 const SPEED = 4
 const JUMP_FORCE = 6
@@ -12,10 +16,20 @@ const _right = new THREE.Vector3()
 const _move = new THREE.Vector3()
 const _euler = new THREE.Euler(0, 0, 0, 'YXZ')
 
-export function CharacterController() {
+export const CharacterController = forwardRef<CharacterControllerHandle>(
+  function CharacterController(_, ref) {
   const bodyRef = useRef<React.ComponentRef<typeof RigidBody>>(null)
   const { camera, gl } = useThree()
   useRapier()
+
+  useImperativeHandle(ref, () => ({
+    teleport: () => {
+      if (!bodyRef.current) return
+      bodyRef.current.setTranslation({ x: 0, y: 1, z: 0 }, true)
+      bodyRef.current.setLinvel({ x: 0, y: 0, z: 0 }, true)
+      bodyRef.current.setAngvel({ x: 0, y: 0, z: 0 }, true)
+    },
+  }))
 
   const keys = useRef(new Set<string>())
   const rawYaw = useRef(0)
@@ -152,4 +166,4 @@ export function CharacterController() {
       <CapsuleCollider args={[0.4, 0.4]} />
     </RigidBody>
   )
-}
+})

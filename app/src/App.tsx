@@ -3,6 +3,7 @@ import { Leva } from 'leva'
 import { WorldViewer } from './components/WorldViewer'
 import { WorldSidebar } from './components/WorldSidebar'
 import { DebugPanel } from './components/DebugPanel'
+import { TouchControls } from './components/TouchControls'
 import { loadWorlds } from './utils/worldLoader'
 
 const worlds = loadWorlds()
@@ -34,6 +35,7 @@ export function App() {
       <DebugPanel />
       <WorldViewer world={entry.world} slug={entry.slug} />
       <WorldSidebar worlds={worlds} activeSlug={entry.slug} />
+      <TouchControls />
     </div>
   )
 }

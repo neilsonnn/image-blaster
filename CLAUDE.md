@@ -6,10 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Compendium is a collection of Claude skills for generating and viewing 3D worlds using the World Labs API and Three.js. It has two main components:
 
-1. **Claude Skills** (`skills/`) — invokable via `/skill-name`, use the World Labs and Gemini APIs to generate and process worlds
+1. **Claude Skills** (`.claude/skills/`) — invokable via `/skill-name`, use the World Labs and Gemini APIs to generate and process worlds
 2. **React Viewer** (`app/`) — TypeScript + SparkJS + React Three Fibre app that loads and displays generated worlds
 
-The two components share a **working directory** (`worlds/`) that is not tracked by git.
+The two components share a **working directory** (`worlds/`) that is not tracked by git. The `input/` folder at the project root is a staging area for user-supplied files (also gitignored).
 
 ## Environment Setup
 
@@ -48,13 +48,15 @@ worlds/
 
 **`scene/project.json`** is the mechanism for arbitrary objects in a world. It uses the Three.js editor's native format (`metadata.type: "App"`, wrapping `THREE.ObjectLoader`-compatible `scene` and `camera` objects as plain JSON). Claude writes objects into it via the `threejs-edit` skill; the Three.js editor can open, modify, and save the same file directly. The React app loads it on world load using `THREE.ObjectLoader` and mounts the objects into the R3F scene. This is the shared contract between Claude and the editor.
 
-### Claude Skills (`skills/`)
+### Claude Skills (`.claude/skills/`)
 
-Skills are Claude Code skills per https://code.claude.com/docs/en/skills. Each skill file lives at `skills/<skill-name>.md`.
+Skills are Claude Code skills per https://code.claude.com/docs/en/skills. Each skill lives at `.claude/skills/<skill-name>/SKILL.md` and is invokable as `/<skill-name>`. Shared world structure context is in `.claude/rules/world-context.md` (auto-loaded every session).
 
-**`create-world`** — Reads source files from `worlds/<name>/source/`, calls the World Labs API (https://docs.worldlabs.ai/), polls until complete, and writes the world artifacts to `worlds/<name>/world/`. Artifacts: Gaussian splat (`.spz`), colliders (`.glb`), panorama (`.png`), thumbnail, and slug.
+**`/create-world [description]`** — Checks `input/` for source images, then calls the World Labs API (https://docs.worldlabs.ai/), polls until complete, and writes artifacts to `worlds/<name>/world/world.json`. Runs in a forked subagent so the 5-minute poll doesn't block conversation.
 
-**`threejs-edit`** — Reads and writes `worlds/<name>/scene/project.json` to add or modify Three.js objects in a world's scene. See `skills/threejs-edit.md`.
+**`/threejs-edit [world-name] [instructions]`** — Reads and writes `worlds/<name>/scene/project.json` to add or modify Three.js objects in a world's scene.
+
+**`input/` staging** — Drop images or other assets into `input/` (gitignored), then ask Claude what to do with them. Claude will check this folder automatically when creating worlds or processing assets.
 
 **`video-understanding`** — Uses Gemini API. TBD.
 
