@@ -22,15 +22,13 @@ GEMINI_API_KEY=       # Required for /video-understanding
 
 ## Commands
 
-> The React app does not exist yet. Once created, common commands will be:
-
 ```bash
 # From app/
-npm install
-npm run dev       # start dev server
-npm run build     # production build
-npm run test      # run tests
-npm run typecheck # tsc --noEmit
+bun install
+bun dev           # start dev server (http://localhost:5173)
+bun run build     # production build
+bun test          # run tests
+bun run typecheck # tsc --noEmit
 ```
 
 ## Architecture
