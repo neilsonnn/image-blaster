@@ -4,8 +4,8 @@ worlds/*
 
 # Input staging area
 input/
-inputs/*
-!inputs/.gitkeep
+input/*
+!input/.gitkeep
 
 # App build output
 app/dist/
