@@ -36,7 +36,7 @@ worlds/<slug>/
   scene/
 ```
 
-Only minimal `project.json` and directories are created automatically. Per-image `source/<image-name>.json`, root `image.json`, and per-object `output/<object-slug>/object.json` files are written by `/image-blast-uncover`.
+Only minimal `project.json` and directories are created automatically. `/image-blast-uncover` writes per-image `source/<image-name>.json` and root `image.json`, then waits for user confirmation before writing per-object `output/<object-slug>/object.json` files.
 
 4. Read the printed project state or `worlds/<slug>/project.json`.
 5. Report:

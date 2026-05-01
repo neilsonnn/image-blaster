@@ -40,7 +40,7 @@ node .claude/scripts/project/project-state.mjs --world "$0" --stage-input
    - scene name and short caption
    - literal environment, visual style, lighting, atmosphere, and ambient sound
    - object candidates with material and source-image evidence
-9. When approved, create or update one object file per approved object:
+9. Stop here until the user confirms which objects to create. When approved, create or update one object file per approved object:
 
 ```text
 worlds/$0/output/<object-slug>/object.json

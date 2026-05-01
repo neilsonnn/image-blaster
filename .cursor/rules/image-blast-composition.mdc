@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Image Blast Composition
 
-- Follow `.claude/rules/project.md` as the canonical Image Blast file convention for Claude Code users. Keep this Cursor rule as reinforcement only.
+- Follow `.claude/rules/project.md` as the canonical Image Blast file convention for the end user (Claude Code users). Keep this Cursor rule as reinforcement only.
 - Simplification is the top priority. Prefer deleting state, helpers, manifests, and orchestration layers when the directory layout and small JSON files already explain what happened.
 - Use one generic convention for generated things: visible indexed artifacts plus colocated hidden request JSON. Do not create object-specific, SFX-specific, plate-specific, or asset-type-specific state systems.
 - Agents should inspect generated state with `ls -a <directory>` first. A directory listing should be enough to understand high-level progress; read visible artifacts or hidden request JSON only when more detail is needed.

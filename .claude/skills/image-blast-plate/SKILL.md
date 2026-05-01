@@ -13,7 +13,7 @@ Create images plates for project `$0`.
 
 - If `$0` is missing, ask for the world slug.
 - Use `ls -a` before reading generated state.
-- By default, remove successfully generated 3D objects from the latest indexed source images.
+- By default, remove confirmed objects, a confirmed object is any `worlds/$0/output/<object>/object.json` file that exists.
 - If `$ARGUMENTS` names a source image/path, process only that source family unless the request says all.
 - Pass extra removal instructions through `--remove`.
 

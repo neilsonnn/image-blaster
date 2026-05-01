@@ -22,7 +22,6 @@ import {
 } from "../asset-pipeline/request-metadata.mjs";
 
 const IMAGE_EXTENSIONS = new Set([".avif", ".gif", ".heic", ".heif", ".jpeg", ".jpg", ".png", ".webp"]);
-const MODEL_EXTENSIONS = new Set([".glb", ".obj", ".fbx", ".usdz"]);
 const RESERVED_OUTPUT_DIRS = new Set(["world", "sfx"]);
 
 async function readJsonIfExists(filePath) {
@@ -84,17 +83,7 @@ async function resolveSourceSelection(sourceDir, image) {
   return [match];
 }
 
-async function hasGeneratedModel(objectDir) {
-  const entries = await readdir(objectDir, { withFileTypes: true }).catch(() => []);
-  return entries.some((entry) => {
-    if (!entry.isFile() || !isVisibleFile(entry.name)) return false;
-    const parsed = parseIndexedName(entry.name);
-    if (!parsed || parsed.hidden) return false;
-    return MODEL_EXTENSIONS.has(parsed.extension.toLowerCase());
-  });
-}
-
-async function successfulObjects(worldDir) {
+async function intendedObjects(worldDir) {
   const outputDir = path.join(worldDir, "output");
   const entries = await readdir(outputDir, { withFileTypes: true }).catch(() => []);
   const objects = [];
@@ -108,7 +97,6 @@ async function successfulObjects(worldDir) {
     if (!objectJson) continue;
 
     const object = objectJson.object || objectJson;
-    if (!(await hasGeneratedModel(objectDir))) continue;
 
     objects.push({
       id: object.id || entry.name,
@@ -131,7 +119,7 @@ function buildPlatePrompt(objectNames, extraRemovals) {
   const removals = [...objectNames];
   if (extraRemovals.length > 0) removals.push(...extraRemovals);
   if (removals.length === 0) {
-    throw new Error("No successful generated objects or extra removal instructions were found.");
+    throw new Error("No confirmed object intents or extra removal instructions were found.");
   }
   return `remove the following objects from the image: ${removals.join(", ")}`;
 }
@@ -150,7 +138,7 @@ export async function generatePlates(options) {
   const sourceDir = path.join(worldDir, "source");
   await ensureDir(sourceDir);
 
-  const objects = await successfulObjects(worldDir);
+  const objects = await intendedObjects(worldDir);
   const objectNames = objects.map((object) => object.name);
   const prompt = buildPlatePrompt(objectNames, extraRemovals);
   const selectedSources = await resolveSourceSelection(sourceDir, image);

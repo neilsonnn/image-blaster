@@ -13,7 +13,7 @@
           '-....-'
 ```
 
-IMAGE-BLASTER is a harness for generating derivative assets from images.
+IMAGE-BLASTER is a harness for creating derivative assets from images.
 
 ## Run
 

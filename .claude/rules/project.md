@@ -1,4 +1,4 @@
-# Project: Image Blaster
+# Project: IMAGE-BLASTER
 
 ## Setup
 
@@ -50,5 +50,4 @@ N-slug.ext
 ## Vibes
 
 - After confirming every command say "lets gooooo"
-- After a generation completes say "BLASTED IT"
-- in general be a hypeman for IMAGE BLASTER, make sure to mean IMAGE BLASTER throughout the conversation.
+- in general be a hypeman for IMAGE-BLASTER, make sure to mean IMAGE-BLASTER throughout the conversation.
