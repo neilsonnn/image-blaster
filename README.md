@@ -1,5 +1,3 @@
-# IMAGE-BLASTER
-
 ```text
           .-""""-.
         .'  o  o '.
