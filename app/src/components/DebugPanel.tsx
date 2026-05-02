@@ -3,7 +3,7 @@ import { useControls, button, folder } from 'leva'
 import { useDebugStore } from '../store/debug'
 import { useButterflyStore } from '../modules/butterfly/store'
 import { LEVA_SCHEMA, DEFAULT_PARAMS, type ButterflyParams } from '../modules/butterfly/params'
-import { WorldRenderMode } from '../types/world'
+import { ObjectRenderMode, WorldRenderMode } from '../types/world'
 
 function dumpParams() {
   const debug = useDebugStore.getState()
@@ -34,6 +34,7 @@ function dumpParams() {
 
   const out: Record<string, unknown> = { dof, post, lighting }
   out.worldRenderMode = debug.worldRenderMode
+  out.objectRenderMode = debug.objectRenderMode
 
   if (debug.controllerMode === 'butterfly') {
     const bf = useButterflyStore.getState()
@@ -53,9 +54,11 @@ function dumpParams() {
 }
 
 export function DebugPanel() {
-  const setShowColliders = useDebugStore((s) => s.setShowColliders)
   const worldRenderMode = useDebugStore((s) => s.worldRenderMode)
   const setWorldRenderMode = useDebugStore((s) => s.setWorldRenderMode)
+  const objectRenderMode = useDebugStore((s) => s.objectRenderMode)
+  const setObjectRenderMode = useDebugStore((s) => s.setObjectRenderMode)
+  const resetObjects = useDebugStore((s) => s.resetObjects)
   const controllerMode = useDebugStore((s) => s.controllerMode)
   const setControllerMode = useDebugStore((s) => s.setControllerMode)
   const dofEnabled = useDebugStore((s) => s.dofEnabled)
@@ -103,6 +106,19 @@ export function DebugPanel() {
       onChange: (v: WorldRenderMode) => setWorldRenderMode(v),
     },
     'Dump Params (copy JSON)': button(dumpParams),
+    Objects: folder({
+      objectRenderMode: {
+        value: objectRenderMode,
+        options: {
+          Lit: ObjectRenderMode.Lit,
+          Wireframe: ObjectRenderMode.Wireframe,
+          'Shaded Wireframe': ObjectRenderMode.ShadedWireframe,
+        },
+        label: 'Object Render',
+        onChange: (v: ObjectRenderMode) => setObjectRenderMode(v),
+      },
+      'Reset Objects': button(resetObjects),
+    }),
     'Splat DoF': folder({
       dofEnabled: {
         value: dofEnabled,
@@ -222,11 +238,6 @@ export function DebugPanel() {
         onChange: setSunColor,
       },
     }),
-    showColliders: {
-      value: false,
-      label: 'Show Colliders',
-      onChange: setShowColliders,
-    },
     controllerMode: {
       value: controllerMode,
       options: { Fly: 'fly', FPS: 'fps', Butterfly: 'butterfly' },

@@ -3,6 +3,7 @@ import { RigidBody } from '@react-three/rapier'
 import { useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
 import { useDebugStore } from '../../store/debug'
+import { ObjectRenderMode } from '../../types/world'
 
 interface Props {
   url: string
@@ -11,12 +12,13 @@ interface Props {
 
 export function WorldCollider({ url, flipY }: Props) {
   const { scene } = useGLTF(url)
-  const showColliders = useDebugStore((s) => s.showColliders)
+  const objectRenderMode = useDebugStore((s) => s.objectRenderMode)
+  const showColliderMesh = objectRenderMode !== ObjectRenderMode.Lit
 
   useEffect(() => {
     scene.traverse((child) => {
       if (!(child instanceof THREE.Mesh)) return
-      child.visible = showColliders
+      child.visible = showColliderMesh
       // Replace lit PBR materials with an unlit basic material so the wireframe
       // color stays constant regardless of lighting / env map.
       const old = Array.isArray(child.material) ? child.material : [child.material]
@@ -28,7 +30,7 @@ export function WorldCollider({ url, flipY }: Props) {
         fog: false,
       })
     })
-  }, [scene, showColliders])
+  }, [scene, showColliderMesh])
 
   return (
     <RigidBody type="fixed" colliders="trimesh" rotation={[flipY ? Math.PI : 0, 0, 0]}>

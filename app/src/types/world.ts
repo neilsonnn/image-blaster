@@ -46,3 +46,9 @@ export enum WorldRenderMode {
   ObjectOnly = 'object-only',
   Combined = 'combined',
 }
+
+export enum ObjectRenderMode {
+  Lit = 'lit',
+  Wireframe = 'wireframe',
+  ShadedWireframe = 'shaded-wireframe',
+}

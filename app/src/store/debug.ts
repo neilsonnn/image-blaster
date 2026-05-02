@@ -1,14 +1,16 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { WorldRenderMode } from '../types/world'
+import { ObjectRenderMode, WorldRenderMode } from '../types/world'
 
 export type ControllerMode = 'fly' | 'fps' | 'butterfly'
 
 interface DebugStore {
-  showColliders: boolean
-  setShowColliders: (v: boolean) => void
   worldRenderMode: WorldRenderMode
   setWorldRenderMode: (v: WorldRenderMode) => void
+  objectRenderMode: ObjectRenderMode
+  setObjectRenderMode: (v: ObjectRenderMode) => void
+  objectResetToken: number
+  resetObjects: () => void
   controllerMode: ControllerMode
   setControllerMode: (v: ControllerMode) => void
   // Splat depth-of-field (Spark 2.0 built-in DoF + circle-bokeh via flat falloff)
@@ -52,10 +54,12 @@ interface DebugStore {
 export const useDebugStore = create<DebugStore>()(
   persist(
     (set) => ({
-      showColliders: false,
-      setShowColliders: (showColliders) => set({ showColliders }),
       worldRenderMode: WorldRenderMode.Combined,
       setWorldRenderMode: (worldRenderMode) => set({ worldRenderMode }),
+      objectRenderMode: ObjectRenderMode.Lit,
+      setObjectRenderMode: (objectRenderMode) => set({ objectRenderMode }),
+      objectResetToken: 0,
+      resetObjects: () => set((s) => ({ objectResetToken: s.objectResetToken + 1 })),
       controllerMode: 'fps',
       setControllerMode: (controllerMode) => set({ controllerMode }),
       dofEnabled: true,
@@ -97,8 +101,8 @@ export const useDebugStore = create<DebugStore>()(
       // Only persist things you'd want sticky across reloads. DoF and Post FX
       // values are always meant to start fresh from the defaults declared above.
       partialize: (s) => ({
-        showColliders: s.showColliders,
         worldRenderMode: s.worldRenderMode,
+        objectRenderMode: s.objectRenderMode,
         controllerMode: s.controllerMode,
       }),
     },

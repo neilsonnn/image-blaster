@@ -56,7 +56,8 @@ export function useButterflyInput(): ButterflyInput {
     const onBlur = () => keys.current.clear()
     window.addEventListener('blur', onBlur)
 
-    const requestLock = () => {
+    const requestLock = (e: MouseEvent) => {
+      if (e.shiftKey) return
       if (document.pointerLockElement !== gl.domElement) {
         gl.domElement.requestPointerLock()
       }

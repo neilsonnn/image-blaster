@@ -1,22 +1,14 @@
-import { useMemo, useRef } from 'react'
-import { useFrame, useLoader } from '@react-three/fiber'
-import * as THREE from 'three'
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
-import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.js'
+import { createRef, useEffect, useRef, useState, type RefObject } from 'react'
+import { RigidBody, type RapierRigidBody } from '@react-three/rapier'
 import type { WorldObjectAsset } from '../../types/world'
+import { useDebugStore } from '../../store/debug'
+import { SceneObject, type SceneObjectHandle } from './SceneObject'
+import { useObjectGrab } from './useObjectGrab'
 
 const GRID_CELL_SIZE = 1
-const OBJECT_SCALE = 0.5
-const ROTATION_SPEED = 0.25
 
 interface Props {
   objects: WorldObjectAsset[]
-}
-
-interface GridObjectProps {
-  object: WorldObjectAsset
-  index: number
-  total: number
 }
 
 function gridPosition(index: number, total: number): [number, number, number] {
@@ -32,48 +24,55 @@ function gridPosition(index: number, total: number): [number, number, number] {
   ]
 }
 
-function GridObject({ object, index, total }: GridObjectProps) {
-  const groupRef = useRef<THREE.Group>(null)
-  const gltf = useLoader(GLTFLoader, object.url)
-  const { scene, offset } = useMemo(() => {
-    const clonedScene = cloneSkeleton(gltf.scene)
-    clonedScene.traverse((child) => {
-      if (!(child instanceof THREE.Mesh)) return
-
-      const materials = Array.isArray(child.material) ? child.material : [child.material]
-      for (const material of materials) {
-        if (material) material.needsUpdate = true
-      }
-    })
-
-    const box = new THREE.Box3().setFromObject(clonedScene)
-    const center = new THREE.Vector3()
-    box.getCenter(center)
-
-    return {
-      scene: clonedScene,
-      offset: new THREE.Vector3(-center.x, -box.min.y, -center.z),
-    }
-  }, [gltf.scene])
-
-  useFrame((_, delta) => {
-    if (groupRef.current) groupRef.current.rotation.y += delta * ROTATION_SPEED
-  })
-
-  return (
-    <group ref={groupRef} position={gridPosition(index, total)} scale={OBJECT_SCALE}>
-      <primitive object={scene} position={offset} dispose={null} />
-    </group>
-  )
-}
-
 export function ObjectGrid({ objects }: Props) {
+  const [hoveredObjectId, setHoveredObjectId] = useState<string | null>(null)
+  const objectRenderMode = useDebugStore((s) => s.objectRenderMode)
+  const objectResetToken = useDebugStore((s) => s.objectResetToken)
+  const objectRefs = useRef(new Map<string, RefObject<SceneObjectHandle | null>>())
+  const anchorRef = useRef<RapierRigidBody>(null)
+  const { onPointerDown, resetObjects } = useObjectGrab({ anchorRef, objectRefs })
+
+  useEffect(() => {
+    const objectIds = new Set(objects.map((object) => object.id))
+    for (const id of objectRefs.current.keys()) {
+      if (!objectIds.has(id)) objectRefs.current.delete(id)
+    }
+  }, [objects])
+
+  useEffect(() => {
+    if (objectResetToken > 0) resetObjects()
+  }, [objectResetToken, resetObjects])
+
+  const getObjectRef = (objectId: string) => {
+    let objectRef = objectRefs.current.get(objectId)
+    if (!objectRef) {
+      objectRef = createRef<SceneObjectHandle>()
+      objectRefs.current.set(objectId, objectRef)
+    }
+    return objectRef
+  }
+
   if (!objects.length) return null
 
   return (
     <>
+      <RigidBody ref={anchorRef} type="kinematicPosition" colliders={false} position={[0, -1000, 0]} />
       {objects.map((object, index) => (
-        <GridObject key={object.id} object={object} index={index} total={objects.length} />
+        <SceneObject
+          key={object.id}
+          ref={getObjectRef(object.id)}
+          object={object}
+          position={gridPosition(index, objects.length)}
+          renderMode={objectRenderMode}
+          isHovered={hoveredObjectId === object.id}
+          onHover={(objectId, hovering) => {
+            setHoveredObjectId((current) => {
+              if (hovering) return objectId
+              return current === objectId ? null : current
+            })
+          }}
+          onPointerDown={(event) => onPointerDown(object.id, event)}
+        />
       ))}
     </>
   )

@@ -18,16 +18,9 @@ const FADE_DURATION = 0.0
 const FADE_SPEED = FADE_DURATION > 0 ? 1 / FADE_DURATION : Infinity
 
 function SanityFloor() {
-  const showColliders = useDebugStore((s) => s.showColliders)
   return (
     <RigidBody type="fixed" position={[0, -5, 0]}>
       <CuboidCollider args={[50, 5, 50]} />
-      {showColliders && (
-        <mesh>
-          <boxGeometry args={[100, 10, 100]} />
-          <meshBasicMaterial color={0x0000ff} wireframe />
-        </mesh>
-      )}
     </RigidBody>
   )
 }
@@ -167,6 +160,11 @@ export function WorldViewer({ world: desiredWorld, slug: desiredSlug, objectAsse
             <Suspense fallback={null}>
               <WorldCollider url={activeWorld.assets.mesh.collider_mesh_url} flipY={flipY} />
             </Suspense>
+            {showObjects && (
+              <Suspense fallback={null}>
+                <ObjectGrid objects={activeObjectAssets} />
+              </Suspense>
+            )}
             <SanityFloor />
           </Physics>
           {showSplat && splatUrl && (
@@ -176,11 +174,6 @@ export function WorldViewer({ world: desiredWorld, slug: desiredSlug, objectAsse
           <Suspense fallback={null}>
             <EnvironmentMap ref={envRef} panoUrl={activeWorld.assets.imagery.pano_url} intensity={environmentIntensity} />
           </Suspense>
-          {showObjects && (
-            <Suspense fallback={null}>
-              <ObjectGrid objects={activeObjectAssets} />
-            </Suspense>
-          )}
           <PostProcessing />
         </Suspense>
       </Canvas>

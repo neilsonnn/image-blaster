@@ -42,7 +42,10 @@ export const FlyController = forwardRef<FlyControllerHandle>(function FlyControl
     window.addEventListener('keydown', onKey)
     window.addEventListener('keyup', onKey)
 
-    const onPointerLock = () => gl.domElement.requestPointerLock()
+    const onPointerLock = (e: MouseEvent) => {
+      if (e.shiftKey) return
+      gl.domElement.requestPointerLock()
+    }
     gl.domElement.addEventListener('click', onPointerLock)
 
     const onMouseMove = (e: MouseEvent) => {
