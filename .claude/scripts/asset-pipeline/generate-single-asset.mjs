@@ -1,7 +1,12 @@
 #!/usr/bin/env node
 import { readdir, rename } from "node:fs/promises";
 import path from "node:path";
-import { runHunyuan3D } from "./hunyuan-3d.mjs";
+import {
+  DEFAULT_HUNYUAN_ENABLE_PBR,
+  DEFAULT_HUNYUAN_FACE_COUNT,
+  DEFAULT_HUNYUAN_GENERATE_TYPE,
+  runHunyuan3D
+} from "./hunyuan-3d.mjs";
 import { runImageEdit } from "./image-edit.mjs";
 import {
   downloadRemoteFiles,
@@ -306,7 +311,10 @@ export async function generateSingleObject(options) {
     objectName,
     description,
     regenerate = false,
-    imageEditProvider
+    imageEditProvider,
+    hunyuanFaceCount = DEFAULT_HUNYUAN_FACE_COUNT,
+    hunyuanEnablePbr = DEFAULT_HUNYUAN_ENABLE_PBR,
+    hunyuanGenerateType = DEFAULT_HUNYUAN_GENERATE_TYPE
   } = options;
 
   if (!world) throw new Error("world is required.");
@@ -434,9 +442,9 @@ export async function generateSingleObject(options) {
             metadataPath: modelMetadataPath,
             metadata: { index: requestIndex },
             assetName: object.name,
-            enablePbr: true,
-            generateType: "Normal",
-            faceCount: 500000
+            enablePbr: hunyuanEnablePbr,
+            generateType: hunyuanGenerateType,
+            faceCount: hunyuanFaceCount
           });
 
       const normalizedModelFiles = await normalizeModelFiles(
@@ -488,7 +496,7 @@ async function main() {
 
   if (!world || (!objectId && !directImage)) {
     throw new Error(
-      "Usage: node generate-single-asset.mjs --world <world-name> (--object-id <object-id> | --image <path>) [--object-name <name>] [--description <text>] [--regenerate]"
+      "Usage: node generate-single-asset.mjs --world <world-name> (--object-id <object-id> | --image <path>) [--object-name <name>] [--description <text>] [--regenerate] [--face-count <40000-1500000>] [--generate-type Normal|LowPoly|Geometry] [--enable-pbr true|false]"
     );
   }
 
@@ -499,7 +507,10 @@ async function main() {
     objectName: one(flags, "object-name") || one(flags, "asset-name"),
     description: one(flags, "description"),
     regenerate: Boolean(flags.regenerate),
-    imageEditProvider: one(flags, "image-edit-provider")
+    imageEditProvider: one(flags, "image-edit-provider"),
+    hunyuanFaceCount: one(flags, "face-count", DEFAULT_HUNYUAN_FACE_COUNT),
+    hunyuanEnablePbr: one(flags, "enable-pbr", DEFAULT_HUNYUAN_ENABLE_PBR),
+    hunyuanGenerateType: one(flags, "generate-type", DEFAULT_HUNYUAN_GENERATE_TYPE)
   });
 
   console.log(JSON.stringify(result, null, 2));

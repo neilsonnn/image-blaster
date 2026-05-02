@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useLocation } from 'wouter'
-import { SpeakerHigh, SpeakerSlash, Stack } from '@phosphor-icons/react'
+import { ArrowCounterClockwise, SpeakerHigh, SpeakerSlash, Stack } from '@phosphor-icons/react'
 import type { WorldEntry } from '../types/world'
 import { useAudioStore } from '../store/audio'
+import { useDebugStore } from '../store/debug'
 
 interface Props {
   worlds: WorldEntry[]
@@ -13,6 +14,7 @@ export function BottomLeftControls({ worlds, activeSlug }: Props) {
   const [, navigate] = useLocation()
   const muted = useAudioStore((s) => s.muted)
   const toggleMuted = useAudioStore((s) => s.toggleMuted)
+  const resetObjects = useDebugStore((s) => s.resetObjects)
   const [open, setOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [visible, setVisible] = useState(false)
@@ -83,6 +85,14 @@ export function BottomLeftControls({ worlds, activeSlug }: Props) {
           className={buttonBase}
         >
           {muted ? <SpeakerSlash size={22} weight="fill" /> : <SpeakerHigh size={22} weight="fill" />}
+        </button>
+        <button
+          onClick={resetObjects}
+          aria-label="Reset objects"
+          title="Reset objects"
+          className={buttonBase}
+        >
+          <ArrowCounterClockwise size={22} weight="bold" />
         </button>
         <button
           onClick={() => setOpen((v) => !v)}

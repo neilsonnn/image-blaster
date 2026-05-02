@@ -1,7 +1,9 @@
-import { useRef, useEffect, useState, forwardRef, useImperativeHandle } from 'react'
+import { useRef, useEffect, useState, forwardRef, useImperativeHandle, useCallback } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import { RigidBody, CapsuleCollider, useRapier } from '@react-three/rapier'
 import * as THREE from 'three'
+import { useCameraDollyGestures } from '../camera/useCameraDollyGestures'
+import { shouldSuppressPointerLock } from '../interaction/pointerGuards'
 
 export interface CharacterControllerHandle {
   reset: () => void
@@ -10,9 +12,11 @@ export interface CharacterControllerHandle {
 const SPEED = 4
 const JUMP_FORCE = 6
 const SMOOTH = 0.12 // mouse smoothing factor (lower = smoother)
+const DOLLY_UNITS_PER_PIXEL = 0.01
 
 const _forward = new THREE.Vector3()
 const _right = new THREE.Vector3()
+const _dollyForward = new THREE.Vector3()
 const _move = new THREE.Vector3()
 const _euler = new THREE.Euler(0, 0, 0, 'YXZ')
 
@@ -40,6 +44,29 @@ export const CharacterController = forwardRef<CharacterControllerHandle>(
   const touchMove = useRef<{ id: number; x: number; y: number } | null>(null)
   const [joystickPos, setJoystickPos] = useState({ x: 0, y: 0 })
 
+  const applyDolly = useCallback((deltaY: number) => {
+    const body = bodyRef.current
+    if (!body) return
+
+    _dollyForward.set(0, 0, -1).applyQuaternion(camera.quaternion).setY(0)
+    if (_dollyForward.lengthSq() < 0.0001) return
+    _dollyForward.normalize()
+
+    const amount = -deltaY * DOLLY_UNITS_PER_PIXEL
+    const position = body.translation()
+    body.setTranslation(
+      {
+        x: position.x + _dollyForward.x * amount,
+        y: position.y,
+        z: position.z + _dollyForward.z * amount,
+      },
+      true,
+    )
+    body.wakeUp()
+  }, [camera])
+
+  useCameraDollyGestures({ domElement: gl.domElement, onDollyPixels: applyDolly })
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.type === 'keydown') keys.current.add(e.code)
@@ -49,7 +76,7 @@ export const CharacterController = forwardRef<CharacterControllerHandle>(
     window.addEventListener('keyup', onKey)
 
     const onPointerLock = (e: MouseEvent) => {
-      if (e.shiftKey) return
+      if (e.button !== 0 || e.defaultPrevented || shouldSuppressPointerLock()) return
       gl.domElement.requestPointerLock()
     }
     gl.domElement.addEventListener('click', onPointerLock)
@@ -64,6 +91,7 @@ export const CharacterController = forwardRef<CharacterControllerHandle>(
 
     // Touch handlers
     const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length >= 2) return
       for (const touch of Array.from(e.changedTouches)) {
         const isLeft = touch.clientX < window.innerWidth / 2
         if (isLeft && !touchMove.current) {
@@ -75,6 +103,7 @@ export const CharacterController = forwardRef<CharacterControllerHandle>(
       }
     }
     const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length >= 2) return
       for (const touch of Array.from(e.changedTouches)) {
         if (touchLook.current?.id === touch.identifier) {
           const dx = touch.clientX - touchLook.current.x

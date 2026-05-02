@@ -1,6 +1,8 @@
-import { useRef, useEffect, forwardRef, useImperativeHandle } from 'react'
+import { useRef, useEffect, forwardRef, useImperativeHandle, useCallback } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
+import { useCameraDollyGestures } from '../camera/useCameraDollyGestures'
+import { shouldSuppressPointerLock } from '../interaction/pointerGuards'
 
 export interface FlyControllerHandle {
   reset: () => void
@@ -9,8 +11,10 @@ export interface FlyControllerHandle {
 const SPEED = 6
 const SHIFT_MULT = 3
 const SMOOTH = 0.12
+const DOLLY_UNITS_PER_PIXEL = 0.02
 
 const _forward = new THREE.Vector3()
+const _dollyForward = new THREE.Vector3()
 const _right = new THREE.Vector3()
 const _up = new THREE.Vector3(0, 1, 0)
 const _move = new THREE.Vector3()
@@ -23,6 +27,13 @@ export const FlyController = forwardRef<FlyControllerHandle>(function FlyControl
   const rawPitch = useRef(0)
   const smoothYaw = useRef(0)
   const smoothPitch = useRef(0)
+
+  const applyDolly = useCallback((deltaY: number) => {
+    _dollyForward.set(0, 0, -1).applyQuaternion(camera.quaternion).normalize()
+    camera.position.addScaledVector(_dollyForward, -deltaY * DOLLY_UNITS_PER_PIXEL)
+  }, [camera])
+
+  useCameraDollyGestures({ domElement: gl.domElement, onDollyPixels: applyDolly })
 
   useImperativeHandle(ref, () => ({
     reset: () => {
@@ -43,7 +54,7 @@ export const FlyController = forwardRef<FlyControllerHandle>(function FlyControl
     window.addEventListener('keyup', onKey)
 
     const onPointerLock = (e: MouseEvent) => {
-      if (e.shiftKey) return
+      if (e.button !== 0 || e.defaultPrevented || shouldSuppressPointerLock()) return
       gl.domElement.requestPointerLock()
     }
     gl.domElement.addEventListener('click', onPointerLock)

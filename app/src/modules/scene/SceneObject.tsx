@@ -1,10 +1,12 @@
-import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef } from 'react'
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from 'react'
 import { ThreeEvent, useLoader } from '@react-three/fiber'
+import { PositionalAudio } from '@react-three/drei'
 import { CuboidCollider, RigidBody, type RapierRigidBody } from '@react-three/rapier'
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.js'
 import { ObjectRenderMode, type WorldObjectAsset } from '../../types/world'
+import { useAudioStore } from '../../store/audio'
 
 export const OBJECT_SCALE = 0.5
 
@@ -70,6 +72,9 @@ export const SceneObject = forwardRef<SceneObjectHandle, Props>(function SceneOb
   ref,
 ) {
   const rigidBodyRef = useRef<RapierRigidBody>(null)
+  const sfxRefs = useRef<Array<THREE.PositionalAudio | null>>([])
+  const lastSfxIndexRef = useRef<number | null>(null)
+  const muted = useAudioStore((s) => s.muted)
   const gltf = useLoader(GLTFLoader, object.url)
   const initialPosition = useMemo(() => new THREE.Vector3(...position), [position])
   const initialRotation = useMemo(() => new THREE.Quaternion(), [])
@@ -183,6 +188,35 @@ export const SceneObject = forwardRef<SceneObjectHandle, Props>(function SceneOb
   }, [isHovered, materialStates, renderMode, wireframeMaterial])
 
   useEffect(() => {
+    sfxRefs.current.length = object.sfxUrls.length
+  }, [object.sfxUrls.length])
+
+  const playRandomSfx = useCallback(() => {
+    if (muted || object.sfxUrls.length === 0) return
+
+    const lastIndex = lastSfxIndexRef.current
+    let nextIndex = 0
+    if (object.sfxUrls.length > 1) {
+      nextIndex = Math.floor(Math.random() * (object.sfxUrls.length - 1))
+      if (lastIndex !== null && nextIndex >= lastIndex) nextIndex += 1
+    }
+
+    const sound = sfxRefs.current[nextIndex]
+    if (!sound) return
+
+    lastSfxIndexRef.current = nextIndex
+    sound.setVolume(1)
+    if (sound.isPlaying) sound.stop()
+
+    const play = () => sound.play()
+    if (sound.context.state === 'suspended') {
+      sound.context.resume().then(play).catch(() => {})
+      return
+    }
+    play()
+  }, [muted, object.sfxUrls.length])
+
+  useEffect(() => {
     return () => {
       wireframeMaterial.dispose()
       wireframeOverlayMaterial.dispose()
@@ -239,7 +273,12 @@ export const SceneObject = forwardRef<SceneObjectHandle, Props>(function SceneOb
           event.stopPropagation()
           onHover(object.id, false)
         }}
-        onPointerDown={onPointerDown}
+        onPointerDown={(event) => {
+          if (event.button !== 0) return
+          event.stopPropagation()
+          playRandomSfx()
+          onPointerDown?.(event)
+        }}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerCancel}
@@ -248,6 +287,17 @@ export const SceneObject = forwardRef<SceneObjectHandle, Props>(function SceneOb
         {renderMode === ObjectRenderMode.ShadedWireframe && (
           <primitive object={wireframeOverlayScene} position={offset} dispose={null} />
         )}
+        {object.sfxUrls.map((url, index) => (
+          <PositionalAudio
+            key={url}
+            ref={(audio) => {
+              sfxRefs.current[index] = audio
+            }}
+            url={url}
+            distance={2}
+            loop={false}
+          />
+        ))}
       </group>
     </RigidBody>
   )

@@ -9,6 +9,14 @@ function worldsPlugin(): Plugin {
   const worldsDir = path.resolve(__dirname, '../worlds')
   const RESERVED_OUTPUT_DIRS = new Set(['world', 'sfx'])
   const MODEL_EXTENSIONS = new Set(['.glb'])
+  const AUDIO_EXTENSIONS = new Set(['.mp3', '.ogg', '.wav', '.m4a'])
+
+  function visibleFiles(dir: string) {
+    if (!fs.existsSync(dir)) return []
+    return fs.readdirSync(dir, { withFileTypes: true })
+      .filter((file) => file.isFile() && !file.name.startsWith('.'))
+      .sort((a, b) => a.name.localeCompare(b.name))
+  }
 
   function readObjectAssets(slug: string) {
     const outputDir = path.join(worldsDir, slug, 'output')
@@ -18,9 +26,8 @@ function worldsPlugin(): Plugin {
       .filter((entry) => entry.isDirectory() && !RESERVED_OUTPUT_DIRS.has(entry.name))
       .flatMap((entry) => {
         const objectDir = path.join(outputDir, entry.name)
-        const model = fs.readdirSync(objectDir, { withFileTypes: true })
-          .filter((file) => file.isFile() && !file.name.startsWith('.') && MODEL_EXTENSIONS.has(path.extname(file.name).toLowerCase()))
-          .sort((a, b) => a.name.localeCompare(b.name))[0]
+        const model = visibleFiles(objectDir)
+          .find((file) => MODEL_EXTENSIONS.has(path.extname(file.name).toLowerCase()))
 
         if (!model) return []
 
@@ -39,6 +46,9 @@ function worldsPlugin(): Plugin {
           id: entry.name,
           name: displayName,
           url: `/worlds/${slug}/output/${entry.name}/${model.name}`,
+          sfxUrls: visibleFiles(path.join(objectDir, 'sfx'))
+            .filter((file) => AUDIO_EXTENSIONS.has(path.extname(file.name).toLowerCase()))
+            .map((file) => `/worlds/${slug}/output/${entry.name}/sfx/${file.name}`),
         }]
       })
   }
@@ -81,6 +91,10 @@ function worldsPlugin(): Plugin {
         '.png': 'image/png',
         '.webp': 'image/webp',
         '.jpg': 'image/jpeg',
+        '.mp3': 'audio/mpeg',
+        '.ogg': 'audio/ogg',
+        '.wav': 'audio/wav',
+        '.m4a': 'audio/mp4',
         '.json': 'application/json',
       }
       server.middlewares.use('/worlds', (req, res, next) => {

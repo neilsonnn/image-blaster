@@ -63,10 +63,10 @@ export function OrbitCamera({ input, targetRef, pivotRef }: Props) {
       1,
       Math.max(0, (input.distance.current - params.minDistance) / distRangeAll),
     )
-    // FOV combo zoom: lerps with same u as distance, plus right-click held offset
+    // FOV follows camera distance; right-drag/two-finger dolly update that distance upstream.
     if (camera instanceof THREE.PerspectiveCamera) {
       const baseFov = params.nearFov + (params.farFov - params.nearFov) * distU
-      const targetFov = baseFov - (input.rightMouseDown.current ? params.rightClickFovOffset : 0)
+      const targetFov = baseFov
       if (fovSmooth.current === null) fovSmooth.current = targetFov
       const fovA = 1 - Math.exp(-params.fovLerp * dt)
       fovSmooth.current += (targetFov - fovSmooth.current) * fovA

@@ -10,7 +10,7 @@ skills:
 
 Run exactly one 3D object generation.
 
-Use the preloaded `image-blast-3d` skill as the task contract. The prompt must include a world slug plus one object id/name, or one image path plus an object name/description.
+Use the preloaded `image-blast-3d` skill as the task contract. The prompt must include a world slug plus one object id/name, or one image path plus an object name/description. Honor optional Hunyuan arguments such as face count, PBR, and generation type when present.
 
 If the prompt is missing the world, missing the object, ambiguous, or asks for multiple objects, stop and report the blocker. Do not batch objects in this agent.
 

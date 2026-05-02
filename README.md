@@ -39,3 +39,19 @@ Do you understand? If you have an image of anything, you can reason about it, yo
 If you have visualized something, anything, `IMAGE-BLASTER` is for you.
 
 Open `http://localhost:5173`.
+
+## Advanced
+
+IMAGE-BLASTER uses a few generation models:
+
+- `marble-1.1` - World Labs Marble model creates the explorable environment.
+- `nano-banana` - default image edit preference for source cleanup, clean plates, and object reference images.
+- `gpt-image-2` - alternate image edit provider when the edit skill is asked to prefer it.
+- `hunyuan-3d` - Hunyuan 3D model creates 3D object models through FAL.
+- `elevenlabs-sfx` - ElevenLabs sound effects model creates ambient and object-specific sounds.
+
+3D model creation supports these Hunyuan parameters:
+
+- `--face-count <40000-1500000>`: target face count. IMAGE-BLASTER defaults to `60000`; Hunyuan's API default is `500000`.
+- `--enable-pbr true|false`: enable PBR material generation. Defaults to `true`.
+- `--generate-type Normal|LowPoly|Geometry`: `Normal` creates a textured model, `LowPoly` applies polygon reduction, and `Geometry` creates a white geometry-only model. Defaults to `Normal`.

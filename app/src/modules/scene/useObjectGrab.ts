@@ -2,10 +2,9 @@ import { useCallback, useEffect, useRef, type RefObject } from 'react'
 import { ThreeEvent, useThree } from '@react-three/fiber'
 import { type RapierRigidBody, useBeforePhysicsStep, useRapier } from '@react-three/rapier'
 import * as THREE from 'three'
+import { markObjectInteraction } from '../interaction/pointerGuards'
 import type { SceneObjectHandle } from './SceneObject'
 
-const LONG_PRESS_MS = 350
-const TOUCH_MOVE_CANCEL_PX = 12
 const RELEASE_SPEED_LIMIT = 18
 
 type ObjectRefMap = Map<string, RefObject<SceneObjectHandle | null>>
@@ -24,18 +23,6 @@ interface ActiveGrab {
   target: THREE.Vector3
   previousTarget: THREE.Vector3
   releaseVelocity: THREE.Vector3
-}
-
-interface PendingTouchGrab {
-  objectId: string
-  handle: SceneObjectHandle
-  pointerId: number
-  startX: number
-  startY: number
-  currentX: number
-  currentY: number
-  point: THREE.Vector3
-  timer: number
 }
 
 const _raycaster = new THREE.Raycaster()
@@ -78,14 +65,6 @@ export function useObjectGrab({ anchorRef, objectRefs }: UseObjectGrabArgs) {
   const { rapier, world } = useRapier()
   const activeGrabRef = useRef<ActiveGrab | null>(null)
   const jointRef = useRef<ReturnType<typeof world.createImpulseJoint> | null>(null)
-  const pendingTouchRef = useRef<PendingTouchGrab | null>(null)
-
-  const clearPendingTouch = useCallback(() => {
-    if (pendingTouchRef.current) {
-      window.clearTimeout(pendingTouchRef.current.timer)
-      pendingTouchRef.current = null
-    }
-  }, [])
 
   const updatePointerTarget = useCallback(
     (grab: ActiveGrab) => {
@@ -97,10 +76,7 @@ export function useObjectGrab({ anchorRef, objectRefs }: UseObjectGrabArgs) {
 
   const endGrab = useCallback(() => {
     const activeGrab = activeGrabRef.current
-    if (!activeGrab) {
-      clearPendingTouch()
-      return
-    }
+    if (!activeGrab) return
 
     if (jointRef.current) {
       world.removeImpulseJoint(jointRef.current, true)
@@ -119,7 +95,8 @@ export function useObjectGrab({ anchorRef, objectRefs }: UseObjectGrabArgs) {
     }
 
     activeGrabRef.current = null
-  }, [clearPendingTouch, gl.domElement, world])
+    markObjectInteraction()
+  }, [gl.domElement, world])
 
   const beginGrab = useCallback(
     (objectId: string, handle: SceneObjectHandle, pointerId: number, clientX: number, clientY: number, worldPoint: THREE.Vector3) => {
@@ -168,38 +145,14 @@ export function useObjectGrab({ anchorRef, objectRefs }: UseObjectGrabArgs) {
       const objectRef = objectRefs.current.get(objectId)
       const handle = objectRef?.current
       if (!handle?.rigidBody) return
-
-      if (event.pointerType === 'touch') {
-        event.stopPropagation()
-        clearPendingTouch()
-
-        const pending: PendingTouchGrab = {
-          objectId,
-          handle,
-          pointerId: event.pointerId,
-          startX: event.clientX,
-          startY: event.clientY,
-          currentX: event.clientX,
-          currentY: event.clientY,
-          point: event.point.clone(),
-          timer: window.setTimeout(() => {
-            const current = pendingTouchRef.current
-            if (!current || current.pointerId !== pending.pointerId) return
-            beginGrab(current.objectId, current.handle, current.pointerId, current.currentX, current.currentY, current.point)
-            pendingTouchRef.current = null
-          }, LONG_PRESS_MS),
-        }
-        pendingTouchRef.current = pending
-        return
-      }
-
-      if (!event.shiftKey) return
+      if (event.button !== 0) return
 
       event.stopPropagation()
       event.nativeEvent.preventDefault()
+      markObjectInteraction()
       beginGrab(objectId, handle, event.pointerId, event.clientX, event.clientY, event.point.clone())
     },
-    [beginGrab, clearPendingTouch, objectRefs],
+    [beginGrab, objectRefs],
   )
 
   const resetObjects = useCallback(() => {
@@ -238,17 +191,9 @@ export function useObjectGrab({ anchorRef, objectRefs }: UseObjectGrabArgs) {
         return
       }
 
-      const pendingTouch = pendingTouchRef.current
-      if (!pendingTouch || event.pointerId !== pendingTouch.pointerId) return
-
-      pendingTouch.currentX = event.clientX
-      pendingTouch.currentY = event.clientY
-      const moved = Math.hypot(event.clientX - pendingTouch.startX, event.clientY - pendingTouch.startY)
-      if (moved > TOUCH_MOVE_CANCEL_PX) clearPendingTouch()
     }
 
     const onPointerEnd = (event: PointerEvent) => {
-      if (pendingTouchRef.current?.pointerId === event.pointerId) clearPendingTouch()
       if (activeGrabRef.current?.pointerId === event.pointerId) {
         event.preventDefault()
         endGrab()
@@ -262,10 +207,9 @@ export function useObjectGrab({ anchorRef, objectRefs }: UseObjectGrabArgs) {
       window.removeEventListener('pointermove', onPointerMove, { capture: true })
       window.removeEventListener('pointerup', onPointerEnd, { capture: true })
       window.removeEventListener('pointercancel', onPointerEnd, { capture: true })
-      clearPendingTouch()
       endGrab()
     }
-  }, [clearPendingTouch, endGrab, gl.domElement])
+  }, [endGrab, gl.domElement])
 
   return {
     activeObjectId: activeGrabRef.current?.objectId ?? null,

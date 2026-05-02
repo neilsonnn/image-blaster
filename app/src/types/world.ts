@@ -33,6 +33,7 @@ export interface WorldObjectAsset {
   id: string
   name: string
   url: string
+  sfxUrls: string[]
 }
 
 export interface WorldEntry {

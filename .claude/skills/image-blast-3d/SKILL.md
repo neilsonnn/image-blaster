@@ -1,7 +1,7 @@
 ---
 name: image-blast-3d
-description: Generate one specified 3D object. Use when the user names exactly one object to make, or provides one image plus the object name/description.
-argument-hint: [world-name] [object-id/name or image path + object description]
+description: Generate one specified 3D object. Use when the user names exactly one object to make, or provides one image plus the object name/description. Supports Hunyuan options for face count, PBR, and generation type.
+argument-hint: [world-name] [object-id/name or image path + object description] [--face-count N] [--generate-type Normal|LowPoly|Geometry] [--enable-pbr true|false]
 allowed-tools: Read Write Glob Bash(ls *) Bash(node .claude/scripts/project/project-state.mjs *) Bash(node .claude/scripts/asset-pipeline/generate-single-asset.mjs *)
 context: fork
 agent: image-blast-3d
@@ -45,6 +45,12 @@ Run the generator and wait for it to finish:
 ```bash
 node .claude/scripts/asset-pipeline/generate-single-asset.mjs --world "$0" --object-id "<object-id>"
 ```
+
+Hunyuan defaults are `--face-count 60000`, `--enable-pbr true`, and `--generate-type Normal`. If the user asks for more detail, polygon reduction, or a white geometry-only model, pass the matching options:
+
+- `--face-count <40000-1500000>`
+- `--generate-type Normal|LowPoly|Geometry`
+- `--enable-pbr true|false`
 
 For explicit regeneration, append `--regenerate`. For direct single-image generation, use:
 

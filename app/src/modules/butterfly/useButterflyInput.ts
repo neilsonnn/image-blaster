@@ -1,5 +1,7 @@
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { useThree } from '@react-three/fiber'
+import { useCameraDollyGestures } from '../camera/useCameraDollyGestures'
+import { shouldSuppressPointerLock } from '../interaction/pointerGuards'
 import { useButterflyStore } from './store'
 
 export interface ButterflyInput {
@@ -10,10 +12,10 @@ export interface ButterflyInput {
   targetDistance: React.MutableRefObject<number>
   touchMoveVec: React.MutableRefObject<{ x: number; y: number }>
   touchVertical: React.MutableRefObject<number>
-  rightMouseDown: React.MutableRefObject<boolean>
 }
 
 const PITCH_LIMIT = Math.PI / 2.1
+const DOLLY_UNITS_PER_PIXEL = 0.01
 
 export function useButterflyInput(): ButterflyInput {
   const { gl } = useThree()
@@ -24,7 +26,16 @@ export function useButterflyInput(): ButterflyInput {
   const targetDistance = useRef(useButterflyStore.getState().defaultDistance)
   const touchMoveVec = useRef({ x: 0, y: 0 })
   const touchVertical = useRef(0)
-  const rightMouseDown = useRef(false)
+
+  const applyDolly = useCallback((deltaY: number) => {
+    const s = useButterflyStore.getState()
+    targetDistance.current = Math.max(
+      s.minDistance,
+      Math.min(s.maxDistance, targetDistance.current + deltaY * DOLLY_UNITS_PER_PIXEL * s.zoomSpeed),
+    )
+  }, [])
+
+  useCameraDollyGestures({ domElement: gl.domElement, onDollyPixels: applyDolly })
 
   useEffect(() => {
     const isEditable = (el: EventTarget | null) => {
@@ -57,7 +68,7 @@ export function useButterflyInput(): ButterflyInput {
     window.addEventListener('blur', onBlur)
 
     const requestLock = (e: MouseEvent) => {
-      if (e.shiftKey) return
+      if (e.button !== 0 || e.defaultPrevented || shouldSuppressPointerLock()) return
       if (document.pointerLockElement !== gl.domElement) {
         gl.domElement.requestPointerLock()
       }
@@ -85,27 +96,22 @@ export function useButterflyInput(): ButterflyInput {
     }
     gl.domElement.addEventListener('wheel', onWheel, { passive: false })
 
-    const onContextMenu = (e: MouseEvent) => e.preventDefault()
-    const onMouseDown = (e: MouseEvent) => {
-      if (e.button === 2) rightMouseDown.current = true
-    }
-    const onMouseUp = (e: MouseEvent) => {
-      if (e.button === 2) rightMouseDown.current = false
-    }
-    gl.domElement.addEventListener('contextmenu', onContextMenu)
-    window.addEventListener('mousedown', onMouseDown)
-    window.addEventListener('mouseup', onMouseUp)
-
     const touches = new Map<number, { x: number; y: number }>()
     let moveTouchId: number | null = null
     let lookTouchId: number | null = null
     let moveOrigin = { x: 0, y: 0 }
-    let pinchStartDist: number | null = null
-    let pinchStartDistance = targetDistance.current
 
     const onTouchStart = (e: TouchEvent) => {
-      for (const t of Array.from(e.changedTouches)) {
+      const changedTouches = Array.from(e.changedTouches)
+      for (const t of changedTouches) {
         touches.set(t.identifier, { x: t.clientX, y: t.clientY })
+      }
+      if (e.touches.length >= 2) {
+        touchMoveVec.current.x = 0
+        touchMoveVec.current.y = 0
+        return
+      }
+      for (const t of changedTouches) {
         const isLeft = t.clientX < window.innerWidth / 2
         if (isLeft && moveTouchId === null) {
           moveTouchId = t.identifier
@@ -114,16 +120,12 @@ export function useButterflyInput(): ButterflyInput {
           lookTouchId = t.identifier
         }
       }
-      if (touches.size === 2) {
-        const [a, b] = Array.from(touches.values())
-        pinchStartDist = Math.hypot(b.x - a.x, b.y - a.y)
-        pinchStartDistance = targetDistance.current
-      }
     }
     const onTouchMove = (e: TouchEvent) => {
       for (const t of Array.from(e.changedTouches)) {
         const prev = touches.get(t.identifier)
         touches.set(t.identifier, { x: t.clientX, y: t.clientY })
+        if (e.touches.length >= 2) continue
         if (t.identifier === lookTouchId && prev) {
           const st = useButterflyStore.getState()
           const s = st.mouseSensitivity
@@ -139,14 +141,9 @@ export function useButterflyInput(): ButterflyInput {
           touchMoveVec.current.y = Math.max(-1, Math.min(1, -dy))
         }
       }
-      if (touches.size === 2 && pinchStartDist) {
-        const [a, b] = Array.from(touches.values())
-        const d = Math.hypot(b.x - a.x, b.y - a.y)
-        const s = useButterflyStore.getState()
-        targetDistance.current = Math.max(
-          s.minDistance,
-          Math.min(s.maxDistance, pinchStartDistance * (pinchStartDist / d)),
-        )
+      if (e.touches.length >= 2) {
+        touchMoveVec.current.x = 0
+        touchMoveVec.current.y = 0
       }
     }
     const onTouchEnd = (e: TouchEvent) => {
@@ -159,7 +156,6 @@ export function useButterflyInput(): ButterflyInput {
         }
         if (t.identifier === lookTouchId) lookTouchId = null
       }
-      if (touches.size < 2) pinchStartDist = null
     }
     gl.domElement.addEventListener('touchstart', onTouchStart, { passive: true })
     gl.domElement.addEventListener('touchmove', onTouchMove, { passive: true })
@@ -173,9 +169,6 @@ export function useButterflyInput(): ButterflyInput {
       gl.domElement.removeEventListener('click', requestLock)
       document.removeEventListener('mousemove', onMouseMove)
       gl.domElement.removeEventListener('wheel', onWheel)
-      gl.domElement.removeEventListener('contextmenu', onContextMenu)
-      window.removeEventListener('mousedown', onMouseDown)
-      window.removeEventListener('mouseup', onMouseUp)
       gl.domElement.removeEventListener('touchstart', onTouchStart)
       gl.domElement.removeEventListener('touchmove', onTouchMove)
       gl.domElement.removeEventListener('touchend', onTouchEnd)
@@ -183,5 +176,5 @@ export function useButterflyInput(): ButterflyInput {
     }
   }, [gl])
 
-  return { keys, yaw, pitch, distance, targetDistance, touchMoveVec, touchVertical, rightMouseDown }
+  return { keys, yaw, pitch, distance, targetDistance, touchMoveVec, touchVertical }
 }
