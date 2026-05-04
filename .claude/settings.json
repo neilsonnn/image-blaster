@@ -1,4 +1,15 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(ls:*)",
+      "Bash(node .claude/scripts/project/project-state.mjs:*)",
+      "Bash(node .claude/scripts/image-edit/generate-edit.mjs:*)",
+      "Bash(node .claude/scripts/world/generate-world.mjs:*)",
+      "Bash(node .claude/scripts/asset-pipeline/generate-single-asset.mjs:*)",
+      "Bash(node .claude/scripts/sfx/fal-elevenlabs-sfx.mjs:*)",
+      "Bash(node .claude/scripts/fal/run-fal.mjs:*)"
+    ]
+  },
   "hooks": {
     "SessionStart": [
       {
