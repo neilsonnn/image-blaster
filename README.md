@@ -15,19 +15,19 @@ A Claude Code project that creates a 3D environment, SFX, and meshes from a sing
 
 ## Quickstart
 
-1. Open a Terminal, enter `git clone https://github.com/neilsonnn/image-blaster`
-2. Enter the directory with `cd image-blaster`
-3. Run `claude` (install with [`curl -fsSL https://claude.ai/install.sh | bash`](https://code.claude.com/docs/en/quickstart))
-4. Say hello to Claude, and give them your API key for [World Labs](https://platform.worldlabs.ai/) and [FAL](https://fal.ai/).
-5. Put an image into `input/` and ask Claude to `IMAGE-BLAST` it.
+1. Open a Terminal, enter `git clone` $\color{#1E90FF}{\texttt{https://github.com/neilsonnn/image-blaster}}$
+2. Enter the directory with `cd` $\color{#9B5DE5}{\texttt{image-blaster/}}$
+3. Run `claude` (install with `curl -fsSL` $\color{#1E90FF}{\texttt{https://claude.ai/install.sh}}$ `| bash`)
+4. Say hello to Claude, and give them your API key for World Labs ($\color{#1E90FF}{\texttt{https://platform.worldlabs.ai/}}$) and FAL ($\color{#1E90FF}{\texttt{https://fal.ai/}}$).
+5. Put an image into $\color{#9B5DE5}{\texttt{input/}}$ and ask Claude to `IMAGE-BLAST` it.
 
 ## Description
 
 By default `image-blaster` will use your input image to create:
 
-1. 3D models (`.glb`, `.obj`) of all *dynamic* objects
-2. Gaussian splat (`.spz`) of the *static* environment,
-3. Ambient looping sound and object specific physics SFX (`.mp3`)
+1. 3D models ($\color{#FFA500}{\texttt{.glb}}$, $\color{#FFA500}{\texttt{.obj}}$) of all *dynamic* objects
+2. Gaussian splat ($\color{#FFA500}{\texttt{.spz}}$) of the *static* environment
+3. Ambient looping sound and object specific physics SFX ($\color{#FFA500}{\texttt{.mp3}}$)
 
 ## Extensions
 
