@@ -6,6 +6,9 @@ import {
   SpeakerSlash,
   GlobeHemisphereEast,
   CameraIcon,
+  ParkIcon,
+  MountainsIcon,
+  CubeIcon,
 } from '@phosphor-icons/react'
 import { Tooltip } from '@radix-ui/themes'
 import { type ReactElement, useEffect } from 'react'
@@ -27,15 +30,21 @@ const QUALITY_MODES = [
 ] as const
 
 const WORLD_MODES = [
-  { mode: WorldRenderMode.Combined, label: 'All' },
-  { mode: WorldRenderMode.SplatOnly, label: 'Scene' },
-  { mode: WorldRenderMode.ObjectOnly, label: 'Objects' },
+  { mode: WorldRenderMode.Combined, Icon: ParkIcon, label: 'Scene + Objects' },
+  { mode: WorldRenderMode.SplatOnly, Icon: MountainsIcon, label: 'Scene' },
+  { mode: WorldRenderMode.ObjectOnly, Icon: CubeIcon, label: 'Objects' },
 ] as const
 
 const CONTROLLER_MODES: readonly { mode: ControllerMode; label: string }[] = [
   { mode: 'fly', label: 'Fly' },
   { mode: 'fps', label: 'FPS' },
 ]
+
+const DIGIT_KEY_INDEX: Record<string, number> = {
+  Digit1: 0,
+  Digit2: 1,
+  Digit3: 2,
+}
 
 function nextMode<T>(items: readonly { mode: T }[], current: T) {
   const index = items.findIndex((item) => item.mode === current)
@@ -66,18 +75,23 @@ export function BottomLeftControls() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
-      const n = e.key === '1' ? 0 : e.key === '2' ? 1 : e.key === '3' ? 2 : -1
-      if (n === -1) return
+      const n = DIGIT_KEY_INDEX[e.code]
+      if (n === undefined) return
       if (e.altKey && e.shiftKey) {
         const qualities = [ViewerQuality.Low, ViewerQuality.High]
         const quality = qualities[n]
-        if (quality) setViewerQuality(quality)
+        if (quality) {
+          e.preventDefault()
+          setViewerQuality(quality)
+        }
       } else if (e.altKey) {
         const objects = [ObjectRenderMode.Wireframe, ObjectRenderMode.ShadedWireframe, ObjectRenderMode.Lit]
+        e.preventDefault()
         setObjectRenderMode(objects[n])
       } else if (e.shiftKey) {
-        const objects = [ObjectRenderMode.Wireframe, ObjectRenderMode.ShadedWireframe, ObjectRenderMode.Lit]
-        setObjectRenderMode(objects[n])
+        const worlds = [WorldRenderMode.Combined, WorldRenderMode.SplatOnly, WorldRenderMode.ObjectOnly]
+        e.preventDefault()
+        setWorldRenderMode(worlds[n])
       }
     }
     window.addEventListener('keydown', onKey)
@@ -93,7 +107,6 @@ export function BottomLeftControls() {
     }`
 
   const currentQuality = QUALITY_MODES.find((item) => item.mode === viewerQuality) ?? QUALITY_MODES[0]
-  const currentWorldMode = WORLD_MODES.find((item) => item.mode === worldRenderMode) ?? WORLD_MODES[0]
   const currentControllerMode = CONTROLLER_MODES.find((item) => item.mode === controllerMode) ?? CONTROLLER_MODES[0]
 
   return (
@@ -126,15 +139,19 @@ export function BottomLeftControls() {
       <div className={`${chrome.divider} mx-1`} />
 
       {/* world render mode */}
-      <ControlTooltip content="View scene, objects, or both">
-        <AppButton
-          onClick={() => setWorldRenderMode(nextMode(WORLD_MODES, worldRenderMode))}
-          className={'w-24'}
-        >
-          <GlobeSimple size={15} weight="regular" className="text-white/45 flex-shrink-0" />
-          <span>{currentWorldMode.label}</span>
-        </AppButton>
-      </ControlTooltip>
+      <div className="flex items-center gap-1">
+        {WORLD_MODES.map(({ mode, Icon, label }) => (
+          <ControlTooltip key={mode} content={label}>
+            <AppButton
+              onClick={() => setWorldRenderMode(mode)}
+              active={worldRenderMode === mode}
+              className={modeBtn(worldRenderMode === mode)}
+            >
+              <Icon size={17} weight={worldRenderMode === mode ? 'fill' : 'regular'} />
+            </AppButton>
+          </ControlTooltip>
+        ))}
+      </div>
 
       <div className={`${chrome.divider} mx-1`} />
 

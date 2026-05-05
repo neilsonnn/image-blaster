@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { ViewerQuality, type WorldEntry } from '../types/world'
+import { type WorldEntry } from '../types/world'
 
 const exampleEntry: WorldEntry = {
   slug: 'example',
@@ -42,7 +42,7 @@ describe('worldLoader', () => {
     expect(worlds[0].world.display_name).toBe('Example World')
   })
 
-  it('getSplatUrl uses full-res for high quality', () => {
+  it('getSplatUrl always uses full-res', () => {
     const world = {
       ...exampleEntry.world,
       assets: {
@@ -56,20 +56,15 @@ describe('worldLoader', () => {
         },
       },
     }
-    const url = getSplatUrl(world, ViewerQuality.High)
+    const url = getSplatUrl(world)
     expect(url).toBe('/worlds/example/output/world/0-world-full_res.spz')
   })
 
-  it('getSplatUrl uses 500k for low quality', () => {
-    const url = getSplatUrl(exampleEntry.world, ViewerQuality.Low)
-    expect(url).toBe('/worlds/example/output/world/0-world-500k.spz')
+  it('getSplatUrl returns empty when full-res is absent', () => {
+    expect(getSplatUrl(exampleEntry.world)).toBe('')
   })
 
-  it('getSplatUrl returns empty for high quality when full-res is absent', () => {
-    expect(getSplatUrl(exampleEntry.world, ViewerQuality.High)).toBe('')
-  })
-
-  it('getSplatUrl returns empty for low quality when 500k is absent', () => {
+  it('getSplatUrl ignores non-full-res splats', () => {
     const world = {
       ...exampleEntry.world,
       assets: {
@@ -80,7 +75,7 @@ describe('worldLoader', () => {
         },
       },
     }
-    expect(getSplatUrl(world, ViewerQuality.Low)).toBe('')
+    expect(getSplatUrl(world)).toBe('')
   })
 
   it('getSplatUrl refuses provider URLs', () => {
@@ -94,6 +89,6 @@ describe('worldLoader', () => {
         },
       },
     }
-    expect(getSplatUrl(world, ViewerQuality.High)).toBe('')
+    expect(getSplatUrl(world)).toBe('')
   })
 })

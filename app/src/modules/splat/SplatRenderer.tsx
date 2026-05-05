@@ -28,6 +28,7 @@ const ignoreRaycast: THREE.Object3D['raycast'] = () => {}
 
 interface Props {
   url: string
+  visible?: boolean
   groundPlaneOffset?: number
   flipY?: boolean
   metricScaleFactor?: number
@@ -36,6 +37,7 @@ interface Props {
 
 export function SplatRenderer({
   url,
+  visible = true,
   groundPlaneOffset = 0,
   flipY,
   metricScaleFactor = 1,
@@ -45,6 +47,7 @@ export function SplatRenderer({
     const splatRef = useRef<SplatMesh>(null)
     const sparkRef = useRef<SparkRenderer>(null)
     const encodeLinear = viewerQuality === ViewerQuality.High
+    const initialEncodeLinear = useRef(encodeLinear)
 
     // Patch the SparkRenderer's vertex shader once to add our custom CoC curve
     // and inject `sharpRange` / `falloffRate` uniforms.
@@ -92,7 +95,7 @@ export function SplatRenderer({
       if (sparkRef.current) sparkRef.current.encodeLinear = encodeLinear
     }, [encodeLinear])
 
-    const sparkArgs = useMemo(() => ({ renderer, enableLod: true, encodeLinear }), [renderer, encodeLinear])
+    const sparkArgs = useMemo(() => ({ renderer, enableLod: true, encodeLinear: initialEncodeLinear.current }), [renderer])
     const splatArgs = useMemo(
       () => ({
         url,
@@ -101,7 +104,7 @@ export function SplatRenderer({
     )
 
     return (
-      <SparkRendererEl ref={sparkRef} args={[sparkArgs]}>
+      <SparkRendererEl ref={sparkRef} args={[sparkArgs]} visible={visible}>
         <group position={[0, groundPlaneOffset, 0]} rotation={[flipY ? Math.PI : 0, 0, 0]} scale={metricScaleFactor}>
           <SplatMeshEl ref={splatRef} args={[splatArgs]} />
         </group>

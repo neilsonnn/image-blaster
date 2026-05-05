@@ -67,7 +67,7 @@ export function WorldViewer({
     if (controllerResetToken > 0) charRef.current?.reset()
   }, [controllerResetToken])
 
-  const splatUrl = getSplatUrl(desiredWorld, viewerQuality)
+  const splatUrl = getSplatUrl(desiredWorld)
   const { ground_plane_offset, flip_y, metric_scale_factor } = desiredWorld.assets.splats.semantics_metadata
   const flipY = flip_y ?? true
   const isHighQuality = viewerQuality === ViewerQuality.High
@@ -120,9 +120,10 @@ export function WorldViewer({
             )}
             <GroundPlane />
           </Physics>
-          {showSplat && splatUrl && (
+          {splatUrl && (
             <SplatRenderer
               url={splatUrl}
+              visible={showSplat}
               groundPlaneOffset={ground_plane_offset}
               flipY={flipY}
               metricScaleFactor={metric_scale_factor}
