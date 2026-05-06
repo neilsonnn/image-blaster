@@ -23,7 +23,6 @@ interface RenderedObject {
 interface Props {
   objects: WorldObjectAsset[]
   placements?: WorldObjectPlacement[]
-  floatingGrid?: boolean
 }
 
 interface ObjectLoadErrorBoundaryProps {
@@ -62,7 +61,6 @@ class ObjectLoadErrorBoundary extends Component<ObjectLoadErrorBoundaryProps, Ob
 function resolveRenderedObjects(
   objects: WorldObjectAsset[],
   placements?: WorldObjectPlacement[],
-  floatingGrid = false,
 ): RenderedObject[] {
   const assetsById = new Map<string, WorldObjectAsset>()
   for (const object of objects) {
@@ -74,24 +72,21 @@ function resolveRenderedObjects(
   return getInitialPlacements(objects, placements).flatMap((placement) => {
     const asset = assetsById.get(placement.assetId ?? placement.objectId) ?? assetsById.get(placement.objectId)
     if (!asset) return []
-    const position: [number, number, number] = floatingGrid
-      ? [placement.position[0], 0.5, placement.position[2]]
-      : placement.position
     return [{
       instanceId: placement.instanceId,
       asset,
-      position,
+      position: placement.position,
       rotation: placement.rotation,
       scale: placement.scale,
-      physics: floatingGrid ? 'static' : placement.physics ?? 'rigidbody',
+      physics: placement.physics ?? 'rigidbody',
     }]
   })
 }
 
-export function ObjectGrid({ objects, placements, floatingGrid = false }: Props) {
+export function ObjectGrid({ objects, placements }: Props) {
   const { gl } = useThree()
   const [hoveredObjectId, setHoveredObjectId] = useState<string | null>(null)
-  const renderedObjects = useMemo(() => resolveRenderedObjects(objects, placements, floatingGrid), [objects, placements, floatingGrid])
+  const renderedObjects = useMemo(() => resolveRenderedObjects(objects, placements), [objects, placements])
   const objectRenderMode = useDebugStore((s) => s.objectRenderMode)
   const objectResetToken = useDebugStore((s) => s.objectResetToken)
   const objectRefs = useRef(new Map<string, RefObject<SceneObjectHandle | null>>())
@@ -184,7 +179,6 @@ export function ObjectGrid({ objects, placements, floatingGrid = false }: Props)
             scale={object.scale}
             physics={object.physics}
             renderMode={objectRenderMode}
-            autoRotateY={floatingGrid}
             isHovered={hoveredObjectId === object.instanceId}
             onHover={handleHover}
             onPointerDown={(event) => onPointerDown(object.instanceId, event)}

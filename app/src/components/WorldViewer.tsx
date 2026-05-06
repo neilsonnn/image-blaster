@@ -1,5 +1,5 @@
 import { Component, Suspense, useRef, useEffect, useState, type ReactNode } from 'react'
-import { Tooltip } from '@radix-ui/themes'
+import { HoverCard, Tooltip } from '@radix-ui/themes'
 import { ArrowsClockwiseIcon, CaretDownIcon, CaretUpIcon } from '@phosphor-icons/react'
 import { Canvas } from '@react-three/fiber'
 import { Physics } from '@react-three/rapier'
@@ -146,7 +146,6 @@ export function WorldViewer({
   const showScene = worldRenderMode !== WorldRenderMode.ObjectOnly
   const showSplat = showScene && objectRenderMode === ObjectRenderMode.Lit
   const showObjects = worldRenderMode !== WorldRenderMode.SplatOnly
-  const showSceneProjectObjects = Boolean(sceneProject)
   const sourceImageOptions = sourceImageVersions.length
     ? sourceImageVersions
     : sourceImageUrl
@@ -189,7 +188,7 @@ export function WorldViewer({
             )}
             {showObjects && !editing && (
               <Suspense fallback={null}>
-                <ObjectGrid objects={objectPhysicsAssets} placements={objectPlacements} floatingGrid={!showSceneProjectObjects} />
+                <ObjectGrid objects={objectPhysicsAssets} placements={objectPlacements} />
               </Suspense>
             )}
             {showObjects && editing && (
@@ -236,74 +235,100 @@ export function WorldViewer({
           {isHighQuality && <PostProcessing />}
         </Suspense>
       </Canvas>
-      {uiVisible && (activeSourceImageUrl || import.meta.env.DEV) && (
-        <div className={`pointer-events-none fixed bottom-4 right-4 z-30 ${chrome.enter}`}>
-          {activeSourceImageUrl ? (
-            sourceThumbnailCollapsed ? (
-              <div className="flex items-center gap-1">
-                <SourceImageVersionSelect
-                  versions={sourceImageOptions}
-                  value={activeSourceImageUrl}
-                  onChange={setSelectedSourceImageUrl}
-                  className="pointer-events-auto"
-                />
-                {import.meta.env.DEV && (
-                  <HotReloadButton
-                    hotReloadEnabled={hotReloadEnabled}
-                    onToggle={() => setHotReloadEnabled(!hotReloadEnabled)}
-                    className="pointer-events-auto"
-                  />
-                )}
-                <SourceThumbnailCollapseButton
-                  collapsed={sourceThumbnailCollapsed}
-                  onToggle={() => setSourceThumbnailCollapsed((collapsed) => !collapsed)}
-                  className="pointer-events-auto"
-                />
-              </div>
-            ) : (
-              <div className="relative overflow-hidden rounded-lg border border-white/15 bg-black/70 shadow-lg ring-1 ring-black/30 backdrop-blur-md">
-                <img
-                  src={activeSourceImageUrl}
-                  alt="Original source"
-                  className="block w-96 object-cover"
-                  draggable={false}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30" />
-                <div className="absolute bottom-2 right-2 flex items-center gap-1">
-                  <SourceImageVersionSelect
-                    versions={sourceImageOptions}
-                    value={activeSourceImageUrl}
-                    onChange={setSelectedSourceImageUrl}
-                    className="pointer-events-auto"
-                  />
-                  {import.meta.env.DEV && (
-                    <HotReloadButton
-                      hotReloadEnabled={hotReloadEnabled}
-                      onToggle={() => setHotReloadEnabled(!hotReloadEnabled)}
-                      className="pointer-events-auto"
-                    />
-                  )}
-                  <SourceThumbnailCollapseButton
-                    collapsed={sourceThumbnailCollapsed}
-                    onToggle={() => setSourceThumbnailCollapsed((collapsed) => !collapsed)}
-                    className="pointer-events-auto"
-                  />
-                </div>
-              </div>
-            )
-          ) : (
-            import.meta.env.DEV && (
-              <HotReloadButton
-                hotReloadEnabled={hotReloadEnabled}
-                onToggle={() => setHotReloadEnabled(!hotReloadEnabled)}
-                className="pointer-events-auto"
-              />
-            )
-          )}
-        </div>
+      {uiVisible && (
+        <SourceImageControls
+          activeSourceImageUrl={activeSourceImageUrl}
+          versions={sourceImageOptions}
+          thumbnailCollapsed={sourceThumbnailCollapsed}
+          hotReloadEnabled={hotReloadEnabled}
+          onHotReloadToggle={() => setHotReloadEnabled(!hotReloadEnabled)}
+          onSourceImageChange={setSelectedSourceImageUrl}
+          onThumbnailCollapseToggle={() => setSourceThumbnailCollapsed((collapsed) => !collapsed)}
+        />
       )}
       {editing && uiVisible && <PlacementEditorOverlay controller={placementEditor} />}
     </>
+  )
+}
+
+function SourceImageControls({
+  activeSourceImageUrl,
+  versions,
+  thumbnailCollapsed,
+  hotReloadEnabled,
+  onHotReloadToggle,
+  onSourceImageChange,
+  onThumbnailCollapseToggle,
+}: {
+  activeSourceImageUrl?: string
+  versions: SourceImageVersion[]
+  thumbnailCollapsed: boolean
+  hotReloadEnabled: boolean
+  onHotReloadToggle: () => void
+  onSourceImageChange: (url: string) => void
+  onThumbnailCollapseToggle: () => void
+}) {
+  if (!activeSourceImageUrl && !import.meta.env.DEV) return null
+
+  return (
+    <div className={`pointer-events-none fixed bottom-4 right-4 z-30 hidden md:block ${chrome.enter}`}>
+      {activeSourceImageUrl ? (
+        thumbnailCollapsed ? (
+          <div className="flex items-center gap-1">
+            {import.meta.env.DEV && (
+              <HotReloadButton
+                hotReloadEnabled={hotReloadEnabled}
+                onToggle={onHotReloadToggle}
+                className="pointer-events-auto"
+              />
+            )}
+            <SourceThumbnailCollapseButton
+              collapsed={thumbnailCollapsed}
+              onToggle={onThumbnailCollapseToggle}
+              className="pointer-events-auto"
+            />
+          </div>
+        ) : (
+          <div className="relative overflow-hidden rounded-lg border border-white/15 bg-black/70 shadow-lg ring-1 ring-black/30 backdrop-blur-md">
+            <img
+              src={activeSourceImageUrl}
+              alt="Original source"
+              className="block w-96 object-cover"
+              draggable={false}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30" />
+            <div className="absolute bottom-2 right-2 flex items-center gap-1">
+              {import.meta.env.DEV && (
+                <HotReloadButton
+                  hotReloadEnabled={hotReloadEnabled}
+                  onToggle={onHotReloadToggle}
+                  className="pointer-events-auto"
+                />
+              )}
+              <SourceImageVersionSelect
+                versions={versions}
+                value={activeSourceImageUrl}
+                onChange={onSourceImageChange}
+                className="pointer-events-auto"
+              />
+              <SourceThumbnailCollapseButton
+                collapsed={thumbnailCollapsed}
+                onToggle={onThumbnailCollapseToggle}
+                className="pointer-events-auto"
+              />
+            </div>
+          </div>
+        )
+      ) : (
+        import.meta.env.DEV && (
+          <HotReloadButton
+            hotReloadEnabled={hotReloadEnabled}
+            onToggle={onHotReloadToggle}
+            className="pointer-events-auto"
+          />
+        )
+      )}
+    </div>
   )
 }
 
@@ -347,23 +372,71 @@ function SourceImageVersionSelect({
   onChange: (url: string) => void
   className?: string
 }) {
+  const [open, setOpen] = useState(false)
+
   if (versions.length <= 1) return null
 
+  const selectedVersion = versions.find((version) => version.url === value) ?? versions[0]
+  const selectedFileName = getSourceImageFileName(selectedVersion)
+
+  const handleSelect = (url: string) => {
+    onChange(url)
+    setOpen(false)
+  }
+
   return (
-    <select
-      value={value}
-      onChange={(event) => onChange(event.target.value)}
-      className={`h-6 rounded border border-white/15 bg-black/70 px-1.5 font-mono text-[10px] text-white/80 shadow-lg backdrop-blur-md ${className}`}
-      aria-label="Select source image version"
-      title="Select source image version"
-    >
-      {versions.map((version) => (
-        <option key={version.url} value={version.url}>
-          {version.label}
-        </option>
-      ))}
-    </select>
+    <HoverCard.Root open={open} onOpenChange={setOpen} openDelay={120} closeDelay={160}>
+      <HoverCard.Trigger>
+        <button
+          type="button"
+          className={`flex h-6 max-w-48 items-center gap-1 rounded border border-white/15 bg-black/70 px-1.5 font-mono text-[10px] text-white/80 shadow-lg backdrop-blur-md transition hover:bg-white/10 hover:text-white ${className}`}
+          aria-label="Select source image"
+          title={selectedFileName}
+        >
+          <span className="truncate">{selectedFileName}</span>
+          <CaretDownIcon size={11} weight="bold" className="shrink-0" />
+        </button>
+      </HoverCard.Trigger>
+      <HoverCard.Content
+        align="end"
+        side="top"
+        sideOffset={8}
+        className="w-72 border border-white/15 bg-black/85 p-1 shadow-xl ring-1 ring-black/30 backdrop-blur-md"
+      >
+        <div className="max-h-64 overflow-y-auto">
+          {versions.map((version) => {
+            const fileName = getSourceImageFileName(version)
+            const selected = version.url === value
+
+            return (
+              <button
+                key={version.url}
+                type="button"
+                onClick={() => handleSelect(version.url)}
+                className={`flex w-full items-center rounded px-2 py-1.5 text-left font-mono text-[11px] transition ${
+                  selected ? 'bg-white/15 text-white' : 'text-white/75 hover:bg-white/10 hover:text-white'
+                }`}
+                aria-current={selected}
+                title={fileName}
+              >
+                <span className="truncate">{fileName}</span>
+              </button>
+            )
+          })}
+        </div>
+      </HoverCard.Content>
+    </HoverCard.Root>
   )
+}
+
+function getSourceImageFileName(version: SourceImageVersion) {
+  const fileName = version.fileName || version.url.split('/').slice(-1)[0] || version.label
+
+  try {
+    return decodeURIComponent(fileName)
+  } catch {
+    return fileName
+  }
 }
 
 function HotReloadButton({
@@ -386,14 +459,13 @@ function HotReloadButton({
       <AppButton
         onClick={onToggle}
         active={hotReloadEnabled}
-        className={`h-6 gap-2 rounded border border-white/15 bg-black/70 px-2 text-white shadow-lg backdrop-blur-md ${
-          hotReloadEnabled ? 'opacity-100 text-green-500' : 'opacity-55'
+        className={`h-6 w-6 justify-center rounded border border-white/15 bg-black/70 p-0 text-white shadow-lg backdrop-blur-md ${
+          hotReloadEnabled ? 'text-white' : 'text-white/25'
         } ${className}`}
         aria-label={hotReloadEnabled ? 'Disable hot reload sync' : 'Enable hot reload sync'}
         aria-pressed={hotReloadEnabled}
       >
-        <ArrowsClockwiseIcon size={16} weight={hotReloadEnabled ? 'bold' : 'regular'} />
-        <span className="font-mono text-xs">hot reload</span>
+        <ArrowsClockwiseIcon size={12} weight={hotReloadEnabled ? 'bold' : 'regular'} />
       </AppButton>
     </Tooltip>
   )

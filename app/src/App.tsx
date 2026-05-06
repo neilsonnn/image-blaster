@@ -73,10 +73,11 @@ export function App() {
 
   useEffect(() => {
     if (!import.meta.env.DEV) return
-    fetch(`/__active-world?slug=${encodeURIComponent(entry.slug)}`).catch((error) => {
+    const params = new URLSearchParams({ slug: entry.slug, editing: String(editing) })
+    fetch(`/__active-world?${params.toString()}`).catch((error) => {
       console.warn(`Could not update active world to "${entry.slug}".`, error)
     })
-  }, [entry.slug])
+  }, [editing, entry.slug])
 
   useEffect(() => {
     if (!import.meta.env.DEV) return

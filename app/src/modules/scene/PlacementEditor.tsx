@@ -977,8 +977,14 @@ export function PlacementEditorOverlay({ controller }: PlacementEditorOverlayPro
                     >
                       <ChromeThumbnail thumbnailUrl={asset?.thumbnailUrl} alt={asset?.name ?? instance.objectId} />
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-xs text-white/90">{asset?.name ?? instance.objectId}</span>
-                        {asset?.variantLabel && <span className="block truncate text-[10px] text-white/45">{asset.variantLabel}</span>}
+                        <span className="flex min-w-0 items-center gap-1.5">
+                          <span className="truncate text-xs text-white/90">{asset?.name ?? instance.objectId}</span>
+                          {asset?.variantLabel && (
+                            <span className="flex-shrink-0 rounded border border-white/10 bg-white/5 px-1.5 py-0.5 text-[10px] leading-none text-white/50">
+                              {asset.variantLabel}
+                            </span>
+                          )}
+                        </span>
                         <span className="block truncate text-[10px] text-white/35">{instance.instanceId}</span>
                       </span>
                     </button>

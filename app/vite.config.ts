@@ -14,6 +14,96 @@ type WorldManifest = Record<string, unknown> & {
   }
 }
 
+type FileWithName = { name: string }
+
+export interface IndexedName {
+  index: number
+  slug: string
+  extension: string
+  name: string
+}
+
+export interface IndexedArtifact<T extends FileWithName = FileWithName> {
+  file: T
+  name: string
+  slug: string
+  extension: string
+  indexed?: IndexedName
+  index?: number
+}
+
+interface IndexedFileOptions {
+  extensions?: ReadonlySet<string>
+  slugs?: ReadonlySet<string>
+}
+
+function visibleFiles(dir: string) {
+  if (!fs.existsSync(dir)) return []
+  return fs.readdirSync(dir, { withFileTypes: true })
+    .filter((file) => file.isFile() && !file.name.startsWith('.'))
+    .sort((a, b) => a.name.localeCompare(b.name))
+}
+
+export function parseIndexedName(fileName: string): IndexedName | undefined {
+  const match = fileName.match(/^(\d+)-(.+?)(\.[^.]+)$/)
+  if (!match) return undefined
+  return {
+    index: Number(match[1]),
+    slug: match[2],
+    extension: match[3].toLowerCase(),
+    name: fileName,
+  }
+}
+
+export function indexedFiles<T extends FileWithName>(
+  files: T[],
+  options: IndexedFileOptions = {},
+): Array<IndexedArtifact<T>> {
+  return files
+    .map((file) => {
+      const indexed = parseIndexedName(file.name)
+      const extension = path.extname(file.name).toLowerCase()
+      return {
+        file,
+        name: file.name,
+        slug: indexed?.slug ?? path.basename(file.name, extension),
+        extension,
+        ...(indexed ? { indexed, index: indexed.index } : {}),
+      }
+    })
+    .filter((entry) => !options.extensions || options.extensions.has(entry.extension))
+    .filter((entry) => !options.slugs || options.slugs.has(entry.slug))
+    .sort((a, b) => {
+      const aIndex = a.index ?? Number.MAX_SAFE_INTEGER
+      const bIndex = b.index ?? Number.MAX_SAFE_INTEGER
+      return aIndex - bIndex || a.name.localeCompare(b.name)
+    })
+}
+
+export function versionLabel(file: IndexedArtifact) {
+  return file.index === undefined ? path.basename(file.name, file.extension) : `v${file.index}`
+}
+
+export function firstIndexed<T extends IndexedArtifact>(files: T[]) {
+  return files[0]
+}
+
+export function latestIndexed<T extends IndexedArtifact>(files: T[]) {
+  return [...files].sort((a, b) => {
+    const aIndex = a.index ?? Number.MIN_SAFE_INTEGER
+    const bIndex = b.index ?? Number.MIN_SAFE_INTEGER
+    return bIndex - aIndex || b.name.localeCompare(a.name)
+  })[0]
+}
+
+export function byIndex<T extends IndexedArtifact>(files: T[], index: number) {
+  return files.find((file) => file.index === index)
+}
+
+export function worldsUrl(slug: string, relativePath: string) {
+  return `/worlds/${slug}/${relativePath.split(path.sep).join('/')}`
+}
+
 function worldsPlugin(): Plugin {
   const VIRTUAL_ID = 'virtual:worlds'
   const RESOLVED_ID = '\0' + VIRTUAL_ID
@@ -25,32 +115,17 @@ function worldsPlugin(): Plugin {
   const PROJECT_VERSION = 1
   const WORLD_SPZ_KEYS = new Set(['100k', '150k', '500k', 'full_res'])
   let activeWorldSlug: string | null = null
+  let activeWorldEditing = false
   let hotReloadEnabled = true
-
-  function visibleFiles(dir: string) {
-    if (!fs.existsSync(dir)) return []
-    return fs.readdirSync(dir, { withFileTypes: true })
-      .filter((file) => file.isFile() && !file.name.startsWith('.'))
-      .sort((a, b) => a.name.localeCompare(b.name))
-  }
 
   function readSourceImageVersions(slug: string) {
     const sourceDir = path.join(worldsDir, slug, 'source')
-    const images = visibleFiles(sourceDir).filter(
-      (f) => IMAGE_EXTENSIONS.has(path.extname(f.name).toLowerCase()),
-    )
-    return images
-      .map((file) => ({ file, indexed: parseIndexedName(file.name) }))
-      .sort((a, b) => {
-        const aIndex = a.indexed?.index ?? Number.MAX_SAFE_INTEGER
-        const bIndex = b.indexed?.index ?? Number.MAX_SAFE_INTEGER
-        return aIndex - bIndex || a.file.name.localeCompare(b.file.name)
-      })
-      .map(({ file, indexed }) => ({
-        url: `/worlds/${slug}/source/${file.name}`,
-        label: indexed ? `v${indexed.index}` : path.basename(file.name, path.extname(file.name)),
-        fileName: file.name,
-        ...(indexed ? { index: indexed.index } : {}),
+    return indexedFiles(visibleFiles(sourceDir), { extensions: IMAGE_EXTENSIONS })
+      .map((image) => ({
+        url: worldsUrl(slug, path.join('source', image.name)),
+        label: versionLabel(image),
+        fileName: image.name,
+        ...(image.index === undefined ? {} : { index: image.index }),
       }))
   }
 
@@ -68,14 +143,8 @@ function worldsPlugin(): Plugin {
       .flatMap((entry) => {
         const objectDir = path.join(outputDir, entry.name)
         const files = visibleFiles(objectDir)
-        const models = files
-          .map((file) => ({ file, indexed: parseIndexedName(file.name) }))
-          .filter(({ file }) => MODEL_EXTENSIONS.has(path.extname(file.name).toLowerCase()))
-          .sort((a, b) => {
-            const aIndex = a.indexed?.index ?? Number.MAX_SAFE_INTEGER
-            const bIndex = b.indexed?.index ?? Number.MAX_SAFE_INTEGER
-            return aIndex - bIndex || a.file.name.localeCompare(b.file.name)
-          })
+        const models = indexedFiles(files, { extensions: MODEL_EXTENSIONS })
+        const images = indexedFiles(files, { extensions: IMAGE_EXTENSIONS })
 
         if (!models.length) return []
 
@@ -91,17 +160,12 @@ function worldsPlugin(): Plugin {
         }
 
         const thumbnailFor = (index?: number) => {
-          const sameIndexImages = files.filter((file) => {
-            if (!IMAGE_EXTENSIONS.has(path.extname(file.name).toLowerCase())) return false
-            const parsed = parseIndexedName(file.name)
-            return index === undefined || parsed?.index === index
-          })
-          return sameIndexImages.find((file) => file.name.includes('thumbnail')) ?? sameIndexImages[0]
+          const sameIndexImages = images.filter((image) => index === undefined || image.index === index)
+          return sameIndexImages.find((image) => image.name.includes('thumbnail')) ?? firstIndexed(sameIndexImages)
         }
 
-        return models.map(({ file, indexed }) => {
-          const index = indexed?.index
-          const variantLabel = index === undefined ? path.basename(file.name, path.extname(file.name)) : `v${index}`
+        return models.map((model) => {
+          const index = model.index
           const thumbnail = thumbnailFor(index)
           return {
             id: index === undefined ? entry.name : `${entry.name}-${index}`,
@@ -109,27 +173,28 @@ function worldsPlugin(): Plugin {
             sourceWorldSlug: slug,
             baseObjectId: entry.name,
             ...(index === undefined ? {} : { index }),
-            variantLabel,
-            fileName: file.name,
+            variantLabel: versionLabel(model),
+            fileName: model.name,
             name: displayName,
-            url: `/worlds/${slug}/output/${entry.name}/${file.name}`,
-            thumbnailUrl: thumbnail ? `/worlds/${slug}/output/${entry.name}/${thumbnail.name}` : undefined,
-            sfxUrls: visibleFiles(path.join(objectDir, 'sfx'))
-              .filter((file) => AUDIO_EXTENSIONS.has(path.extname(file.name).toLowerCase()))
-              .map((file) => `/worlds/${slug}/output/${entry.name}/sfx/${file.name}`),
+            url: worldsUrl(slug, path.join('output', entry.name, model.name)),
+            thumbnailUrl: thumbnail ? worldsUrl(slug, path.join('output', entry.name, thumbnail.name)) : undefined,
+            sfxUrls: readSfxUrls(slug, path.join('output', entry.name, 'sfx')),
           }
         })
       })
   }
 
+  function readSfxUrls(slug: string, relativeDir: string) {
+    return indexedFiles(visibleFiles(path.join(worldsDir, slug, relativeDir)), { extensions: AUDIO_EXTENSIONS })
+      .map((file) => worldsUrl(slug, path.join(relativeDir, file.name)))
+  }
+
   function readWorldSfxUrls(slug: string) {
-    return visibleFiles(path.join(worldsDir, slug, 'output', 'sfx'))
-      .filter((file) => AUDIO_EXTENSIONS.has(path.extname(file.name).toLowerCase()))
-      .map((file) => `/worlds/${slug}/output/sfx/${file.name}`)
+    return readSfxUrls(slug, path.join('output', 'sfx'))
   }
 
   function worldAssetUrl(slug: string, filename?: string) {
-    return filename ? `/worlds/${slug}/output/world/${filename}` : ''
+    return filename ? worldsUrl(slug, path.join('output', 'world', filename)) : ''
   }
 
   function localWorldAssetFilename(files: fs.Dirent[], predicate: (name: string) => boolean) {
@@ -140,40 +205,21 @@ function worldsPlugin(): Plugin {
     return key.replace(/[^a-z0-9_-]/gi, '_')
   }
 
-  function parseIndexedName(fileName: string) {
-    const match = fileName.match(/^(\d+)-(.+?)(\.[^.]+)$/)
-    if (!match) return undefined
-    return {
-      index: Number(match[1]),
-      slug: match[2],
-      extension: match[3],
-      name: fileName,
-    }
-  }
-
   function latestIndexedFile(files: fs.Dirent[], slug: string, extension?: string) {
-    return files
-      .map((file) => parseIndexedName(file.name))
-      .filter((entry): entry is NonNullable<ReturnType<typeof parseIndexedName>> => {
-        if (!entry) return false
-        return entry.slug === slug && (!extension || entry.extension === extension)
-      })
-      .sort((a, b) => b.index - a.index)[0]
+    const matches = indexedFiles(files, {
+      slugs: new Set([slug]),
+      ...(extension ? { extensions: new Set([extension.toLowerCase()]) } : {}),
+    }).filter((file) => file.index !== undefined)
+    return latestIndexed(matches)?.indexed
   }
 
-  function latestNamedFile(files: fs.Dirent[], predicate: (entry: NonNullable<ReturnType<typeof parseIndexedName>>) => boolean) {
-    return files
-      .map((file) => parseIndexedName(file.name))
-      .filter((entry): entry is NonNullable<ReturnType<typeof parseIndexedName>> => {
-        if (!entry) return false
-        return predicate(entry)
-      })
-      .sort((a, b) => b.index - a.index)[0]?.name
-  }
-
-  function fallbackWorldAssetFilename(files: fs.Dirent[], indexedPredicate: (name: string) => boolean, legacyPredicate: (name: string) => boolean) {
-    return localWorldAssetFilename(files, indexedPredicate)
-      ?? localWorldAssetFilename(files, legacyPredicate)
+  function worldAssetFilename(files: fs.Dirent[], index: number | undefined, slug: string, extensions?: ReadonlySet<string>) {
+    const matches = indexedFiles(files, {
+      slugs: new Set([slug]),
+      ...(extensions ? { extensions } : {}),
+    })
+    if (index === undefined) return latestIndexed(matches.filter((file) => file.index !== undefined))?.name ?? byIndex(matches, 0)?.name
+    return byIndex(matches, index)?.name ?? byIndex(matches, 0)?.name
   }
 
   function emptyWorldManifest(slug: string, project?: Record<string, unknown>): WorldManifest {
@@ -254,53 +300,28 @@ function worldsPlugin(): Plugin {
 
     for (const key of Object.keys(existingSpzUrls)) {
       const assetKey = assetKeyForFilename(key)
-      const filename = index === undefined
-        ? latestNamedFile(files, (entry) => entry.slug === `world-${assetKey}` && entry.extension === '.spz')
-          ?? localWorldAssetFilename(files, (name) => name === `0-world-${assetKey}.spz`)
-        : fallbackWorldAssetFilename(
-          files,
-          (name) => name === `${index}-world-${assetKey}.spz`,
-          (name) => name === `0-world-${assetKey}.spz`,
-        )
+      const filename = worldAssetFilename(files, index, `world-${assetKey}`, new Set(['.spz']))
       if (filename) spzUrls[key] = worldAssetUrl(slug, filename)
     }
 
-    for (const file of files) {
-      const match = file.name.match(/^(\d+)-world-(100k|150k|500k|full_res)\.spz$/)
-      if (match && (index === undefined || Number(match[1]) === index) && WORLD_SPZ_KEYS.has(match[2])) {
-        spzUrls[match[2]] = worldAssetUrl(slug, file.name)
+    for (const file of indexedFiles(files, { extensions: new Set(['.spz']) })) {
+      const match = file.slug.match(/^world-(100k|150k|500k|full_res)$/)
+      if (!match || !WORLD_SPZ_KEYS.has(match[1])) continue
+
+      const key = match[1]
+      if (file.index === undefined) {
+        if (!spzUrls[key]) spzUrls[key] = worldAssetUrl(slug, file.name)
         continue
       }
-      const legacyMatch = file.name.match(/^0-world-(100k|150k|500k|full_res)\.spz$/)
-      if (legacyMatch && index !== undefined && WORLD_SPZ_KEYS.has(legacyMatch[1]) && !spzUrls[legacyMatch[1]]) {
-        spzUrls[legacyMatch[1]] = worldAssetUrl(slug, file.name)
-        continue
-      }
-      const keyOnlyMatch = file.name.match(/^world-(100k|150k|500k|full_res)\.spz$/)
-      if (keyOnlyMatch && WORLD_SPZ_KEYS.has(keyOnlyMatch[1]) && !spzUrls[keyOnlyMatch[1]]) {
-        spzUrls[keyOnlyMatch[1]] = worldAssetUrl(slug, file.name)
+
+      if (index === undefined || file.index === index || (index !== undefined && file.index === 0 && !spzUrls[key])) {
+        spzUrls[key] = worldAssetUrl(slug, file.name)
       }
     }
 
-    const collider = index === undefined
-      ? latestNamedFile(files, (entry) => entry.slug === 'world' && entry.extension === '.glb') ?? localWorldAssetFilename(files, (name) => name === '0-world.glb')
-      : fallbackWorldAssetFilename(files, (name) => name === `${index}-world.glb`, (name) => name === '0-world.glb')
-    const pano = index === undefined
-      ? latestNamedFile(files, (entry) => entry.slug === 'world-pano' && IMAGE_EXTENSIONS.has(entry.extension.toLowerCase()))
-        ?? localWorldAssetFilename(files, (name) => /^0-world-pano\.(png|jpe?g|webp|avif)$/i.test(name))
-      : fallbackWorldAssetFilename(
-        files,
-        (name) => new RegExp(`^${index}-world-pano\\.(png|jpe?g|webp|avif)$`, 'i').test(name),
-        (name) => /^0-world-pano\.(png|jpe?g|webp|avif)$/i.test(name),
-      )
-    const thumbnail = index === undefined
-      ? latestNamedFile(files, (entry) => entry.slug === 'world-thumbnail' && IMAGE_EXTENSIONS.has(entry.extension.toLowerCase()))
-        ?? localWorldAssetFilename(files, (name) => /^0-world-thumbnail\.(png|jpe?g|webp|avif)$/i.test(name))
-      : fallbackWorldAssetFilename(
-        files,
-        (name) => new RegExp(`^${index}-world-thumbnail\\.(png|jpe?g|webp|avif)$`, 'i').test(name),
-        (name) => /^0-world-thumbnail\.(png|jpe?g|webp|avif)$/i.test(name),
-      )
+    const collider = worldAssetFilename(files, index, 'world', MODEL_EXTENSIONS)
+    const pano = worldAssetFilename(files, index, 'world-pano', IMAGE_EXTENSIONS)
+    const thumbnail = worldAssetFilename(files, index, 'world-thumbnail', IMAGE_EXTENSIONS)
 
     return {
       ...world,
@@ -332,16 +353,15 @@ function worldsPlugin(): Plugin {
   function worldAssetIndexes(slug: string) {
     const files = visibleFiles(path.join(worldsDir, slug, 'output', 'world'))
     const indexes = new Set<number>()
-    for (const file of files) {
-      const parsed = parseIndexedName(file.name)
-      if (!parsed) continue
+    for (const file of indexedFiles(files)) {
+      if (file.index === undefined) continue
       if (
-        parsed.slug === 'world' ||
-        parsed.slug === 'world-pano' ||
-        parsed.slug === 'world-thumbnail' ||
-        /^world-(100k|150k|500k|full_res)$/.test(parsed.slug)
+        file.slug === 'world' ||
+        file.slug === 'world-pano' ||
+        file.slug === 'world-thumbnail' ||
+        /^world-(100k|150k|500k|full_res)$/.test(file.slug)
       ) {
-        indexes.add(parsed.index)
+        indexes.add(file.index)
       }
     }
     if (files.some((file) => file.name === 'world.json')) indexes.add(0)
@@ -467,7 +487,7 @@ function worldsPlugin(): Plugin {
         const manifest = readWorldManifest(slug)
         if (!manifest) throw new Error(`No world manifest or project.json found for ${slug}`)
         const worldVersions = readWorldVersions(slug)
-        const defaultWorld = worldVersions.at(-1)?.world ?? withLocalWorldAssets(slug, manifest.world, manifest.index)
+        const defaultWorld = worldVersions[worldVersions.length - 1]?.world ?? withLocalWorldAssets(slug, manifest.world, manifest.index)
         return {
           slug,
           world: defaultWorld,
@@ -512,7 +532,11 @@ function worldsPlugin(): Plugin {
       const worldSlug = worldSlugForFile(file)
       if (!worldSlug) return
       if (hasHiddenPathPart(file)) return []
-      const shouldReloadWorldsModule = isWorldCatalogFile(file) || isActiveWorldOutputPath(file) || (RELOAD_EXTENSIONS.has(path.extname(file).toLowerCase()) && !isSceneProjectFile(file))
+      const isSceneProject = isSceneProjectFile(file)
+      const shouldReloadWorldsModule = isWorldCatalogFile(file) ||
+        isActiveWorldOutputPath(file) ||
+        (isSceneProject && !activeWorldEditing) ||
+        (RELOAD_EXTENSIONS.has(path.extname(file).toLowerCase()) && !isSceneProject)
       if (!shouldReloadWorldsModule) return
       if (!hotReloadEnabled) return []
       if (activeWorldSlug !== null && worldSlug !== activeWorldSlug && !isWorldCatalogFile(file)) return []
@@ -533,12 +557,17 @@ function worldsPlugin(): Plugin {
         invalidateWorldsModule()
         server.ws.send({ type: 'full-reload' })
       }
+      const shouldReloadSceneProject = (file: string) => {
+        if (activeWorldEditing || !isSceneProjectFile(file)) return false
+        const worldSlug = worldSlugForFile(file)
+        return Boolean(worldSlug && (activeWorldSlug === null || worldSlug === activeWorldSlug))
+      }
       server.watcher.on('add', (file) => {
-        if (!hotReloadEnabled || hasHiddenPathPart(file) || (!isActiveWorldOutputPath(file) && !isWorldCatalogFile(file))) return
+        if (!hotReloadEnabled || hasHiddenPathPart(file) || (!isActiveWorldOutputPath(file) && !isWorldCatalogFile(file) && !shouldReloadSceneProject(file))) return
         reloadWorldsModule()
       })
       server.watcher.on('unlink', (file) => {
-        if (!hotReloadEnabled || hasHiddenPathPart(file) || (!isActiveWorldOutputPath(file) && !isWorldCatalogFile(file))) return
+        if (!hotReloadEnabled || hasHiddenPathPart(file) || (!isActiveWorldOutputPath(file) && !isWorldCatalogFile(file) && !shouldReloadSceneProject(file))) return
         reloadWorldsModule()
       })
       server.watcher.on('addDir', (file) => {
@@ -565,6 +594,7 @@ function worldsPlugin(): Plugin {
       server.middlewares.use('/__active-world', (req, res) => {
         const requestUrl = new URL(req.url || '/', 'http://localhost')
         const slug = requestUrl.searchParams.get('slug')
+        const editing = requestUrl.searchParams.get('editing')
         if (!slug) {
           res.statusCode = 400
           res.end('Missing slug')
@@ -580,6 +610,7 @@ function worldsPlugin(): Plugin {
         }
 
         activeWorldSlug = slug
+        activeWorldEditing = editing === 'true'
         res.statusCode = 204
         res.end()
       })
