@@ -1,6 +1,6 @@
 ---
-description: Keep Claude Code skills thin and aligned with the official skills docs
-globs: .claude/skills/**/SKILL.md
+description: Keep Claude Code skills thin and local tools generic
+globs: .claude/skills/**/SKILL.md,.claude/scripts/**/*.mjs,.claude/rules/**/*.md
 alwaysApply: false
 ---
 
@@ -16,3 +16,6 @@ Follow the official Claude Code skills docs when editing `SKILL.md` files: https
 - Use `disable-model-invocation: true` for side-effecting skills that only the user should trigger.
 - Invoked skill content persists for the rest of the session, so keep standing guidance short and unambiguous.
 - Keep project rules high-level: shared conventions, routing, and ordering. Put skill-specific operational details in the relevant `.claude/skills/*/SKILL.md`.
+- Skills and project rules should teach agents which files matter for a workflow. Do not move that workflow knowledge into `.mjs` scripts unless the script owns a provider contract or a truly generic filesystem invariant.
+- Project `.mjs` tools should be dumb, explicit, and argument-driven: compute paths, download a given URL to a given path, delete a given path, or apply generic no-clobber/path-safety checks. Avoid encoding asset-specific knowledge like "world panoramas are important" when the Skill can read JSON and pass explicit args.
+- Prefer agent intelligence plus clear Skill instructions over hidden orchestration in scripts. If a script starts deciding which workflow artifacts are important, pause and move that decision back into the Skill/rule layer.

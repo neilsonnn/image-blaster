@@ -2,7 +2,7 @@
 name: image-blast-wildcard
 description: Discover and run any FAL API model or operation the user requests. Use this as a generic FAL escape hatch when the user wants to generate something that does not fit a narrower Image Blast skill.
 argument-hint: [FAL model/endpoint or natural request] [inputs, prompt, files, output location]
-allowed-tools: Read Write Glob WebFetch WebSearch Bash(ls *) Bash(node .claude/scripts/fal/run-fal.mjs *)
+allowed-tools: Read Write Glob WebFetch WebSearch Bash(ls *) Bash(node .claude/scripts/project/ensure-local-assets.mjs *) Bash(node .claude/scripts/fal/run-fal.mjs *)
 ---
 
 Resolve one arbitrary FAL API operation from `$ARGUMENTS`, confirm it with the user, then run it only after confirmation.
@@ -35,5 +35,11 @@ node .claude/scripts/fal/run-fal.mjs \
 ```
 
 Use `--mode run` only when the FAL API page requires a direct `fal.run` call instead of the queue API. The default queue mode persists request metadata before polling and downloads any returned file URLs.
+
+If request metadata records provider URLs but local files are missing, fill them from the matching hidden request JSON:
+
+```bash
+node .claude/scripts/project/ensure-local-assets.mjs --from "<request-json-path>"
+```
 
 Final response before confirmation: ask for confirmation of the exact endpoint. Final response after execution: report the endpoint, input summary, output directory, downloaded output files, request metadata, and any raw result fields that were not downloadable.

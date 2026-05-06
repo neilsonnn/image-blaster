@@ -2,7 +2,7 @@
 name: image-blast-sfx
 description: Generate and post-process a clean sound effect, object impact, or ambient loop.
 argument-hint: [world-name] [world ambience, object-id impact, or custom SFX prompt]
-allowed-tools: Read Write Glob Bash(ls *) Bash(node .claude/scripts/project/project-state.mjs *) Bash(node .claude/scripts/sfx/fal-elevenlabs-sfx.mjs *)
+allowed-tools: Read Write Glob Bash(ls *) Bash(node .claude/scripts/project/project-state.mjs *) Bash(node .claude/scripts/project/ensure-local-assets.mjs *) Bash(node .claude/scripts/sfx/fal-elevenlabs-sfx.mjs *)
 context: fork
 agent: image-blast-sfx
 ---
@@ -43,5 +43,11 @@ node .claude/scripts/sfx/fal-elevenlabs-sfx.mjs \
 ```
 
 Add `--loop` only for world ambience or explicit looping requests. Avoid music or voices unless explicitly requested.
+
+If request metadata records provider URLs but local audio files are missing, fill them from the matching hidden request JSON:
+
+```bash
+node .claude/scripts/project/ensure-local-assets.mjs --from "<request-json-path>"
+```
 
 Final response: report generated audio files, loop status, request metadata, prompt used, and the trimming/quality notes from `audio_analysis`.

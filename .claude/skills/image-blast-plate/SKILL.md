@@ -2,7 +2,7 @@
 name: image-blast-plate
 description: Generate one clean plate/source cleanup image for an IMAGE-BLASTER world. Use after confirmed objects exist, when removing foreground objects or other specified content from a source image.
 argument-hint: [world-name] [optional source image or extra removal instructions]
-allowed-tools: Read Write Glob Bash(ls *) Bash(node .claude/scripts/project/project-state.mjs *) Bash(node .claude/scripts/image-edit/generate-edit.mjs *)
+allowed-tools: Read Write Glob Bash(ls *) Bash(node .claude/scripts/project/project-state.mjs *) Bash(node .claude/scripts/project/ensure-local-assets.mjs *) Bash(node .claude/scripts/image-edit/generate-edit.mjs *)
 context: fork
 agent: image-blast-plate
 ---
@@ -34,6 +34,12 @@ node .claude/scripts/image-edit/generate-edit.mjs \
 ```
 
 Optional provider override: `--provider nano-banana|gpt-image-2`.
+
+If request metadata records provider URLs but local plate files are missing, fill them from the matching hidden request JSON:
+
+```bash
+node .claude/scripts/project/ensure-local-assets.mjs --from "<request-json-path>"
+```
 
 ```bash
 node .claude/scripts/project/project-state.mjs --world "$0"

@@ -246,20 +246,6 @@ async function latestWorldArtifact(outputDir) {
   return undefined;
 }
 
-async function worldArtifactForIndex(outputDir, index) {
-  const indexedPath = path.join(outputDir, `${index}-world.json`);
-  if (await pathExists(indexedPath)) {
-    return { index, path: indexedPath, name: path.basename(indexedPath) };
-  }
-
-  const legacyPath = path.join(outputDir, "world.json");
-  if (index === 0 && (await pathExists(legacyPath))) {
-    return { index: 0, path: legacyPath, name: "world.json", legacy: true };
-  }
-
-  return undefined;
-}
-
 async function nextWorldIndex(outputDir) {
   const indexed = await nextIndex(outputDir, "world");
   return indexed === 0 && (await pathExists(path.join(outputDir, "world.json"))) ? 1 : indexed;
@@ -292,37 +278,6 @@ async function pollOperation(operation, metadataPath, baseMetadata, pollInterval
   return current;
 }
 
-export async function redownloadWorldAssets(options) {
-  const {
-    world,
-    index
-  } = options;
-
-  if (!world) throw new Error("world is required.");
-
-  const outputDir = `worlds/${world}/output/world`;
-  await ensureDir(outputDir);
-
-  const artifact = index === undefined
-    ? await latestWorldArtifact(outputDir)
-    : await worldArtifactForIndex(outputDir, Number(index));
-  if (!artifact) {
-    throw new Error(index === undefined
-      ? `No world JSON found in ${outputDir}.`
-      : `No world JSON found for index ${index} in ${outputDir}.`);
-  }
-
-  const worldJson = await readJson(artifact.path);
-  const downloaded = await downloadWorldAssets(worldJson, outputDir, artifact.index);
-  return {
-    world,
-    index: artifact.index,
-    redownloaded: true,
-    world_json: artifact.path,
-    ...downloaded
-  };
-}
-
 export async function generateWorld(options) {
   const {
     world,
@@ -339,15 +294,12 @@ export async function generateWorld(options) {
 
   const existingWorld = regenerate ? undefined : await latestWorldArtifact(outputDir);
   if (existingWorld) {
-    const existingWorldJson = await readJson(existingWorld.path);
-    const downloaded = await downloadWorldAssets(existingWorldJson, outputDir, existingWorld.index);
     return {
       world,
       index: existingWorld.index,
       skipped: true,
       skip_reason: `${existingWorld.name} already exists. Pass --regenerate to create a new world.`,
-      world_json: existingWorld.path,
-      ...downloaded
+      world_json: existingWorld.path
     };
   }
 
@@ -434,16 +386,7 @@ async function main() {
   const { flags } = parseArgs();
   const world = one(flags, "world");
   if (!world) {
-    throw new Error("Usage: node generate-world.mjs --world <world-name> [--image <path-or-url>] [--prompt <text>] [--regenerate] [--redownload] [--index N]");
-  }
-
-  if (flags.redownload || flags.materialize) {
-    const result = await redownloadWorldAssets({
-      world,
-      index: one(flags, "index")
-    });
-    console.log(JSON.stringify(result, null, 2));
-    return;
+    throw new Error("Usage: node generate-world.mjs --world <world-name> [--image <path-or-url>] [--prompt <text>] [--regenerate]");
   }
 
   const prompt = [...many(flags, "prompt"), ...many(flags, "description")].join("\n").trim() || undefined;

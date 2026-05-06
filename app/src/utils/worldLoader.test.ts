@@ -6,6 +6,7 @@ const exampleEntry: WorldEntry = {
   objectAssets: [],
   allObjectAssets: [],
   worldSfxUrls: [],
+  sourceImageVersions: [],
   world: {
     world_id: 'test-id',
     display_name: 'Example World',

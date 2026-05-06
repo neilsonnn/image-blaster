@@ -44,16 +44,16 @@ Use one convention for generated files:
 ```text
 N-slug.ext
 .N-slug-request.json
-.N-slug__scope-request.json
 ```
 
 - `N` is the generation index. `0` is the source/original; higher numbers are derived generations.
 - `slug` is the stable family or asset slug.
-- Hidden request JSON sits beside the file it generated. Use `__scope` when one generation index has multiple request roles, such as image and model requests for the same object.
+- Hidden request JSON sits beside the file it generated.
 - Multi-file generations share one index. A world generation can produce `N-world.json`, `N-world.glb`, `N-world-pano.png`, `N-world-thumbnail.webp`, and `N-world-full_res.spz`.
 - Inspect generated state with `ls -a <directory>` to get state, and read JSON files to get more details.
-- Never overwrite an existing indexed artifact. If you must manually materialize provider URLs already recorded in local JSON, choose the next intended index or the matching existing JSON index, use no-clobber downloads, and write only canonical `N-*` names.
-- Prefer existing materialization helpers for recorded URLs. For world assets, use `node .claude/scripts/world/generate-world.mjs --world <world-slug> --redownload [--index N]` to fill missing local files from an existing `N-world.json` without starting a new generation.
+- Provider URLs are provenance inside JSON/request metadata. The frontend loads local files only.
+- Generation scripts create new indexes and record provider responses. Generic project tools handle local indexed file operations such as path computation, explicit downloads, local asset repair, and deletion.
+- Local repair fills missing files for an existing index from recorded JSON/request metadata; it does not create a new generation.
 
 ## Skill Invocation
 

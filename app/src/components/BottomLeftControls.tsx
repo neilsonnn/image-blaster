@@ -19,9 +19,9 @@ import { AppButton } from './AppButton'
 import { chrome } from './AppChrome'
 
 const OBJECT_MODES = [
-  { mode: ObjectRenderMode.Wireframe, Icon: GlobeSimple, label: 'Wireframe' },
-  { mode: ObjectRenderMode.ShadedWireframe, Icon: Sphere, label: 'Shaded Wireframe' },
   { mode: ObjectRenderMode.Lit, Icon: GlobeHemisphereEast, label: 'Lit' },
+  { mode: ObjectRenderMode.ShadedWireframe, Icon: Sphere, label: 'Shaded Wireframe' },
+  { mode: ObjectRenderMode.Wireframe, Icon: GlobeSimple, label: 'Wireframe' },
 ] as const
 
 const QUALITY_MODES = [
@@ -85,7 +85,7 @@ export function BottomLeftControls() {
           setViewerQuality(quality)
         }
       } else if (e.altKey) {
-        const objects = [ObjectRenderMode.Wireframe, ObjectRenderMode.ShadedWireframe, ObjectRenderMode.Lit]
+        const objects = [ObjectRenderMode.Lit, ObjectRenderMode.ShadedWireframe, ObjectRenderMode.Wireframe]
         e.preventDefault()
         setObjectRenderMode(objects[n])
       } else if (e.shiftKey) {
@@ -96,7 +96,7 @@ export function BottomLeftControls() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [setObjectRenderMode, setViewerQuality])
+  }, [setObjectRenderMode, setViewerQuality, setWorldRenderMode])
 
   const utilBtn =
     'w-8 h-8 justify-center text-white rounded'

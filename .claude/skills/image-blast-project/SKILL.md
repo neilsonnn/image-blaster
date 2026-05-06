@@ -2,7 +2,7 @@
 name: image-blast-project
 description: Create, inspect, and manage an IMAGE-BLAST project envelope under worlds/<slug>. Use before other image-blast skills (image-blast-uncover, image-blast-world, image-blast-3d, etc.) or whenever the user asks about active project state.
 argument-hint: [world-name or description] [optional instructions]
-allowed-tools: Read Write Glob Bash(ls *) Bash(node .claude/scripts/project/project-state.mjs *) Bash(node .claude/scripts/project/show-folder.mjs *)
+allowed-tools: Read Write Glob Bash(ls *) Bash(node .claude/scripts/project/project-state.mjs *) Bash(node .claude/scripts/project/indexed-path.mjs *) Bash(node .claude/scripts/project/download.mjs *) Bash(node .claude/scripts/project/ensure-local-assets.mjs *) Bash(node .claude/scripts/project/delete.mjs *) Bash(node .claude/scripts/project/show-folder.mjs *)
 ---
 
 Create or inspect an Image Blast project. Input: `$ARGUMENTS`.
@@ -10,6 +10,8 @@ Create or inspect an Image Blast project. Input: `$ARGUMENTS`.
 ## Instructions
 
 Follow the generic file convention in `.claude/rules/project.md`. Inspect generated directories with `ls -a` before reading JSON details.
+
+Use generic project tools for local indexed asset path computation, explicit downloads, local asset repair, and deletion. Provider-specific scripts are only for provider generation/polling.
 
 1. Resolve the project slug:
    - If `$0` is an existing `worlds/<slug>` directory or a slug-like name, use it.

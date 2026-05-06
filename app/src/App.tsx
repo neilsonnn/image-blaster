@@ -1,6 +1,4 @@
 import { Suspense, lazy, useEffect, useState } from 'react'
-import { Tooltip } from '@radix-ui/themes'
-import { ArrowsClockwiseIcon } from '@phosphor-icons/react'
 import { useRoute, useLocation, Redirect } from 'wouter'
 import { WorldViewer } from './components/WorldViewer'
 import { WorldSidebar } from './components/WorldSidebar'
@@ -9,8 +7,6 @@ import { TouchControls } from './components/TouchControls'
 import { useSceneProject } from './modules/scene/useSceneProject'
 import { loadWorlds } from './utils/worldLoader'
 import { useDebugStore } from './store/debug'
-import { AppButton } from './components/AppButton'
-import { chrome } from './components/AppChrome'
 
 const worlds = loadWorlds()
 const LevaPanel = import.meta.env.DEV
@@ -34,7 +30,6 @@ export function App() {
   const levaCollapsed = useDebugStore((s) => s.levaCollapsed)
   const setLevaCollapsed = useDebugStore((s) => s.setLevaCollapsed)
   const hotReloadEnabled = useDebugStore((s) => s.hotReloadEnabled)
-  const setHotReloadEnabled = useDebugStore((s) => s.setHotReloadEnabled)
   const [location] = useLocation()
   const [uiHidden, setUiHidden] = useState(false)
   const [sceneProjectEnabled, setSceneProjectEnabled] = useState(true)
@@ -107,33 +102,11 @@ export function App() {
           </Suspense>
         </div>
       )}
-      {import.meta.env.DEV && uiVisible && (
-        <div className={`fixed bottom-4 right-4 z-30 ${chrome.enter}`}>
-          <Tooltip
-            content={hotReloadEnabled
-              ? 'enabled hot reload, page will refresh when assets change'
-              : 'hot reload disabled, page will not refresh when assets change'}
-            delayDuration={0}
-            side="left"
-          >
-            <AppButton
-              onClick={() => setHotReloadEnabled(!hotReloadEnabled)}
-              active={hotReloadEnabled}
-              className={`h-6 gap-2 rounded border border-white/15 bg-black/70 px-2 text-white shadow-lg backdrop-blur-md ${
-                hotReloadEnabled ? 'opacity-100 text-green-500' : 'opacity-55'
-              }`}
-              aria-label={hotReloadEnabled ? 'Disable hot reload sync' : 'Enable hot reload sync'}
-              aria-pressed={hotReloadEnabled}
-            >
-              <ArrowsClockwiseIcon size={16} weight={hotReloadEnabled ? 'bold' : 'regular'} />
-              <span className="font-mono text-xs">hot reload</span>
-            </AppButton>
-          </Tooltip>
-        </div>
-      )}
       <WorldViewer
         world={activeWorld}
         slug={entry.slug}
+        sourceImageUrl={entry.sourceImageUrl}
+        sourceImageVersions={entry.sourceImageVersions}
         objectAssets={entry.objectAssets}
         allObjectAssets={entry.allObjectAssets}
         worldSfxUrls={entry.worldSfxUrls}

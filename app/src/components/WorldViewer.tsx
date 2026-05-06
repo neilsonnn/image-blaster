@@ -1,4 +1,6 @@
-import { Component, Suspense, useRef, useEffect, type ReactNode } from 'react'
+import { Component, Suspense, useRef, useEffect, useState, type ReactNode } from 'react'
+import { Tooltip } from '@radix-ui/themes'
+import { ArrowsClockwiseIcon, CaretDownIcon, CaretUpIcon } from '@phosphor-icons/react'
 import { Canvas } from '@react-three/fiber'
 import { Physics } from '@react-three/rapier'
 import { SplatRenderer } from '../modules/splat/SplatRenderer'
@@ -15,7 +17,9 @@ import { AudioManager } from '../modules/audio/AudioManager'
 import { PostProcessing } from '../modules/postprocessing/PostProcessing'
 import { getSplatUrl } from '../utils/worldLoader'
 import { useDebugStore } from '../store/debug'
-import { WorldRenderMode, ObjectRenderMode, ViewerQuality, type World, type WorldObjectAsset, type WorldSceneProject } from '../types/world'
+import { WorldRenderMode, ObjectRenderMode, ViewerQuality, type SourceImageVersion, type World, type WorldObjectAsset, type WorldSceneProject } from '../types/world'
+import { AppButton } from './AppButton'
+import { chrome } from './AppChrome'
 
 type CharHandle = CharacterControllerHandle | FlyControllerHandle
 const DEFAULT_ENVIRONMENT_URL = '/hdri.jpg'
@@ -76,6 +80,8 @@ function DefaultEnvironment({ intensity }: { intensity: number }) {
 interface Props {
   world: World
   slug: string
+  sourceImageUrl?: string
+  sourceImageVersions?: SourceImageVersion[]
   objectAssets: WorldObjectAsset[]
   allObjectAssets: WorldObjectAsset[]
   worldSfxUrls: string[]
@@ -89,6 +95,8 @@ interface Props {
 export function WorldViewer({
   world: desiredWorld,
   slug: desiredSlug,
+  sourceImageUrl,
+  sourceImageVersions = [],
   objectAssets: desiredObjectAssets,
   allObjectAssets,
   worldSfxUrls,
@@ -108,6 +116,10 @@ export function WorldViewer({
   const environmentIntensity = useDebugStore((s) => s.environmentIntensity)
   const sunIntensity = useDebugStore((s) => s.sunIntensity)
   const sunColor = useDebugStore((s) => s.sunColor)
+  const hotReloadEnabled = useDebugStore((s) => s.hotReloadEnabled)
+  const setHotReloadEnabled = useDebugStore((s) => s.setHotReloadEnabled)
+  const [sourceThumbnailCollapsed, setSourceThumbnailCollapsed] = useState(false)
+  const [selectedSourceImageUrl, setSelectedSourceImageUrl] = useState(sourceImageUrl ?? '')
   const colliderUrl = desiredWorld.assets.mesh.collider_mesh_url.startsWith('/worlds/')
     ? desiredWorld.assets.mesh.collider_mesh_url
     : ''
@@ -123,6 +135,10 @@ export function WorldViewer({
     if (controllerResetToken > 0) charRef.current?.reset()
   }, [controllerResetToken])
 
+  useEffect(() => {
+    setSelectedSourceImageUrl(sourceImageUrl ?? '')
+  }, [desiredSlug, sourceImageUrl])
+
   const splatUrl = getSplatUrl(desiredWorld)
   const { ground_plane_offset, flip_y, metric_scale_factor } = desiredWorld.assets.splats.semantics_metadata
   const flipY = flip_y ?? true
@@ -131,6 +147,12 @@ export function WorldViewer({
   const showSplat = showScene && objectRenderMode === ObjectRenderMode.Lit
   const showObjects = worldRenderMode !== WorldRenderMode.SplatOnly
   const showSceneProjectObjects = Boolean(sceneProject)
+  const sourceImageOptions = sourceImageVersions.length
+    ? sourceImageVersions
+    : sourceImageUrl
+      ? [{ url: sourceImageUrl, label: 'v0', fileName: sourceImageUrl.split('/').slice(-1)[0] ?? sourceImageUrl }]
+      : []
+  const activeSourceImageUrl = selectedSourceImageUrl || sourceImageOptions[0]?.url
   const placementEditor = usePlacementEditor({
     slug: desiredSlug,
     objects: desiredObjectAssets,
@@ -214,7 +236,165 @@ export function WorldViewer({
           {isHighQuality && <PostProcessing />}
         </Suspense>
       </Canvas>
+      {uiVisible && (activeSourceImageUrl || import.meta.env.DEV) && (
+        <div className={`pointer-events-none fixed bottom-4 right-4 z-30 ${chrome.enter}`}>
+          {activeSourceImageUrl ? (
+            sourceThumbnailCollapsed ? (
+              <div className="flex items-center gap-1">
+                <SourceImageVersionSelect
+                  versions={sourceImageOptions}
+                  value={activeSourceImageUrl}
+                  onChange={setSelectedSourceImageUrl}
+                  className="pointer-events-auto"
+                />
+                {import.meta.env.DEV && (
+                  <HotReloadButton
+                    hotReloadEnabled={hotReloadEnabled}
+                    onToggle={() => setHotReloadEnabled(!hotReloadEnabled)}
+                    className="pointer-events-auto"
+                  />
+                )}
+                <SourceThumbnailCollapseButton
+                  collapsed={sourceThumbnailCollapsed}
+                  onToggle={() => setSourceThumbnailCollapsed((collapsed) => !collapsed)}
+                  className="pointer-events-auto"
+                />
+              </div>
+            ) : (
+              <div className="relative overflow-hidden rounded-lg border border-white/15 bg-black/70 shadow-lg ring-1 ring-black/30 backdrop-blur-md">
+                <img
+                  src={activeSourceImageUrl}
+                  alt="Original source"
+                  className="block w-96 object-cover"
+                  draggable={false}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30" />
+                <div className="absolute bottom-2 right-2 flex items-center gap-1">
+                  <SourceImageVersionSelect
+                    versions={sourceImageOptions}
+                    value={activeSourceImageUrl}
+                    onChange={setSelectedSourceImageUrl}
+                    className="pointer-events-auto"
+                  />
+                  {import.meta.env.DEV && (
+                    <HotReloadButton
+                      hotReloadEnabled={hotReloadEnabled}
+                      onToggle={() => setHotReloadEnabled(!hotReloadEnabled)}
+                      className="pointer-events-auto"
+                    />
+                  )}
+                  <SourceThumbnailCollapseButton
+                    collapsed={sourceThumbnailCollapsed}
+                    onToggle={() => setSourceThumbnailCollapsed((collapsed) => !collapsed)}
+                    className="pointer-events-auto"
+                  />
+                </div>
+              </div>
+            )
+          ) : (
+            import.meta.env.DEV && (
+              <HotReloadButton
+                hotReloadEnabled={hotReloadEnabled}
+                onToggle={() => setHotReloadEnabled(!hotReloadEnabled)}
+                className="pointer-events-auto"
+              />
+            )
+          )}
+        </div>
+      )}
       {editing && uiVisible && <PlacementEditorOverlay controller={placementEditor} />}
     </>
+  )
+}
+
+function SourceThumbnailCollapseButton({
+  collapsed,
+  onToggle,
+  className = '',
+}: {
+  collapsed: boolean
+  onToggle: () => void
+  className?: string
+}) {
+  const Icon = collapsed ? CaretUpIcon : CaretDownIcon
+
+  return (
+    <Tooltip
+      content={collapsed ? 'show original source image' : 'collapse original source image'}
+      delayDuration={0}
+      side="top"
+    >
+      <AppButton
+        onClick={onToggle}
+        className={`h-6 w-6 justify-center rounded border border-white/15 bg-black/70 p-0 text-white opacity-70 shadow-lg backdrop-blur-md ${className}`}
+        aria-label={collapsed ? 'Show original source image' : 'Collapse original source image'}
+        aria-pressed={collapsed}
+      >
+        <Icon size={15} weight="bold" />
+      </AppButton>
+    </Tooltip>
+  )
+}
+
+function SourceImageVersionSelect({
+  versions,
+  value,
+  onChange,
+  className = '',
+}: {
+  versions: SourceImageVersion[]
+  value: string
+  onChange: (url: string) => void
+  className?: string
+}) {
+  if (versions.length <= 1) return null
+
+  return (
+    <select
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      className={`h-6 rounded border border-white/15 bg-black/70 px-1.5 font-mono text-[10px] text-white/80 shadow-lg backdrop-blur-md ${className}`}
+      aria-label="Select source image version"
+      title="Select source image version"
+    >
+      {versions.map((version) => (
+        <option key={version.url} value={version.url}>
+          {version.label}
+        </option>
+      ))}
+    </select>
+  )
+}
+
+function HotReloadButton({
+  hotReloadEnabled,
+  onToggle,
+  className = '',
+}: {
+  hotReloadEnabled: boolean
+  onToggle: () => void
+  className?: string
+}) {
+  return (
+    <Tooltip
+      content={hotReloadEnabled
+        ? 'enabled hot reload, page will refresh when assets change'
+        : 'hot reload disabled, page will not refresh when assets change'}
+      delayDuration={0}
+      side="top"
+    >
+      <AppButton
+        onClick={onToggle}
+        active={hotReloadEnabled}
+        className={`h-6 gap-2 rounded border border-white/15 bg-black/70 px-2 text-white shadow-lg backdrop-blur-md ${
+          hotReloadEnabled ? 'opacity-100 text-green-500' : 'opacity-55'
+        } ${className}`}
+        aria-label={hotReloadEnabled ? 'Disable hot reload sync' : 'Enable hot reload sync'}
+        aria-pressed={hotReloadEnabled}
+      >
+        <ArrowsClockwiseIcon size={16} weight={hotReloadEnabled ? 'bold' : 'regular'} />
+        <span className="font-mono text-xs">hot reload</span>
+      </AppButton>
+    </Tooltip>
   )
 }

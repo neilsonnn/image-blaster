@@ -34,14 +34,29 @@ function worldsPlugin(): Plugin {
       .sort((a, b) => a.name.localeCompare(b.name))
   }
 
-  function readSourceImageUrl(slug: string): string | undefined {
+  function readSourceImageVersions(slug: string) {
     const sourceDir = path.join(worldsDir, slug, 'source')
     const images = visibleFiles(sourceDir).filter(
       (f) => IMAGE_EXTENSIONS.has(path.extname(f.name).toLowerCase()),
     )
-    if (!images.length) return undefined
-    const latest = images[images.length - 1]
-    return `/worlds/${slug}/source/${latest.name}`
+    return images
+      .map((file) => ({ file, indexed: parseIndexedName(file.name) }))
+      .sort((a, b) => {
+        const aIndex = a.indexed?.index ?? Number.MAX_SAFE_INTEGER
+        const bIndex = b.indexed?.index ?? Number.MAX_SAFE_INTEGER
+        return aIndex - bIndex || a.file.name.localeCompare(b.file.name)
+      })
+      .map(({ file, indexed }) => ({
+        url: `/worlds/${slug}/source/${file.name}`,
+        label: indexed ? `v${indexed.index}` : path.basename(file.name, path.extname(file.name)),
+        fileName: file.name,
+        ...(indexed ? { index: indexed.index } : {}),
+      }))
+  }
+
+  function readSourceImageUrl(slug: string): string | undefined {
+    const versions = readSourceImageVersions(slug)
+    return versions.find((version) => version.index === 0)?.url ?? versions[0]?.url
   }
 
   function readObjectAssets(slug: string) {
@@ -460,6 +475,7 @@ function worldsPlugin(): Plugin {
           objectAssets: readObjectAssets(slug),
           allObjectAssets: [],
           sourceImageUrl: readSourceImageUrl(slug),
+          sourceImageVersions: readSourceImageVersions(slug),
           worldSfxUrls: readWorldSfxUrls(slug),
           sceneProject: readSceneProject(slug),
         }

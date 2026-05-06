@@ -68,6 +68,13 @@ export interface WorldVersion {
   complete: boolean
 }
 
+export interface SourceImageVersion {
+  url: string
+  label: string
+  fileName: string
+  index?: number
+}
+
 export interface WorldEntry {
   slug: string
   world: World
@@ -75,6 +82,7 @@ export interface WorldEntry {
   objectAssets: WorldObjectAsset[]
   allObjectAssets: WorldObjectAsset[]
   sourceImageUrl?: string
+  sourceImageVersions: SourceImageVersion[]
   worldSfxUrls: string[]
   sceneProject?: WorldSceneProject
 }

@@ -168,16 +168,15 @@ export function WorldSidebar({
                   >
                     <div className="mt-1 flex min-w-0 flex-col gap-1">
                       <div className="group flex min-w-0 items-center gap-1 rounded">
-                        <div className="min-w-0 flex flex-1 items-center justify-between gap-2 rounded px-2 py-1 text-left text-white opacity-80">
+                        <div className="min-w-0 flex flex-1 items-center gap-2 rounded px-2 py-1 text-left text-white opacity-80">
                           <ChromeThumbnail thumbnailUrl={displayWorld.assets.thumbnail_url} alt={name} />
-                          <span className="min-w-0 flex-1">
-                            <span className="block text-white/85 text-xs font-semibold leading-tight truncate">{slug}</span>
-                            <span className="block text-white/40 text-[11px] leading-tight truncate">World (.spz)</span>
+                          <span className="min-w-0 flex-1 text-white/85 text-xs font-semibold leading-tight truncate">
+                            {slug}
                           </span>
                           {isActive && worldVersions.length > 1 && selectedVersion && (
                             <select
                               value={selectedVersion.index}
-                              className="h-6 flex-shrink-0 rounded border border-white/10 bg-black/50 px-1 text-[10px] text-white/75"
+                              className="h-5 flex-shrink-0 rounded border border-white/10 bg-white/5 px-1 text-[10px] leading-none text-white/60"
                               aria-label={`Select world version for ${name}`}
                               onChange={(event) => onActiveWorldVersionChange(Number(event.target.value))}
                             >

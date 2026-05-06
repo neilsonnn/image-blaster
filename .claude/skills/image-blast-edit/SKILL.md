@@ -2,7 +2,7 @@
 name: image-blast-edit
 description: Generate one image edit from explicit input images and a prompt. Use for source cleanup, clean plates, object removal, or other FAL-backed image edits.
 argument-hint: [image path] [prompt] [optional output dir, role, output slug]
-allowed-tools: Read Write Glob Bash(ls *) Bash(node .claude/scripts/image-edit/generate-edit.mjs *)
+allowed-tools: Read Write Glob Bash(ls *) Bash(node .claude/scripts/project/ensure-local-assets.mjs *) Bash(node .claude/scripts/image-edit/generate-edit.mjs *)
 context: fork
 agent: image-blast-edit
 ---
@@ -29,5 +29,11 @@ node .claude/scripts/image-edit/generate-edit.mjs \
 ```
 
 Optional provider override: `--provider nano-banana|gpt-image-2`.
+
+If request metadata records provider URLs but local image files are missing, fill them from the matching hidden request JSON:
+
+```bash
+node .claude/scripts/project/ensure-local-assets.mjs --from "<request-json-path>"
+```
 
 Final response: report input images, output image, request metadata, role, and prompt used.
