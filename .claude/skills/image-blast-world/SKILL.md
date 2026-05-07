@@ -1,10 +1,10 @@
 ---
-name: image-friend-world
+name: image-blast-world
 description: Generate the 3D static environment of a world after previewing the source or plate image with the user.
 argument-hint: [world-name] [optional image path or world prompt]
 allowed-tools: Read Write Glob Bash(ls *) Bash(node .claude/scripts/project/project-state.mjs *) Bash(node .claude/scripts/project/show-path.mjs *) Bash(node .claude/scripts/project/ensure-local-assets.mjs *) Bash(node .claude/scripts/world/generate-world.mjs *)
 context: fork
-agent: image-friend-world
+agent: image-blast-world
 ---
 
 Create or resume one World Labs world for project `$0`.

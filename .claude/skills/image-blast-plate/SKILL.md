@@ -1,10 +1,10 @@
 ---
-name: image-friend-plate
-description: Generate one clean plate/source cleanup image for an IMAGE-FRIEND world. Use after confirmed objects exist, when removing foreground objects or other specified content from a source image.
+name: image-blast-plate
+description: Generate one clean plate/source cleanup image for an IMAGE-BLASTER world. Use after confirmed objects exist, when removing foreground objects or other specified content from a source image.
 argument-hint: [world-name] [optional source image or extra removal instructions]
 allowed-tools: Read Write Glob Bash(ls *) Bash(node .claude/scripts/project/project-state.mjs *) Bash(node .claude/scripts/project/ensure-local-assets.mjs *) Bash(node .claude/scripts/image-edit/generate-edit.mjs *)
 context: fork
-agent: image-friend-plate
+agent: image-blast-plate
 ---
 
 Create one clean plate for project `$0`.
@@ -16,7 +16,7 @@ Create one clean plate for project `$0`.
 - Select the source image from `$ARGUMENTS` when provided; otherwise use the newest visible source image in `worlds/$0/source/`.
 - Build one removal prompt from confirmed objects plus any extra removal instructions. Confirmed objects are `worlds/$0/output/<object>/object.json` files; use `object.name`, adding short details from `object.description` when needed.
 - Remove all requested content in one image edit pass. Do not split removals across multiple agents or one edit per object.
-- Follow `image-friend-edit` by calling the generic edit script with `--role plate` and `--output-slug "<source-slug>-plate"`.
+- Follow `image-blast-edit` by calling the generic edit script with `--role plate` and `--output-slug "<source-slug>-plate"`.
 
 ```bash
 node .claude/scripts/project/project-state.mjs --world "$0"

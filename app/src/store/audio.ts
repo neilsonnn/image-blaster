@@ -14,6 +14,6 @@ export const useAudioStore = create<AudioStore>()(
       setMuted: (muted) => set({ muted }),
       toggleMuted: () => set({ muted: !get().muted }),
     }),
-    { name: 'image-friend-audio' },
+    { name: 'image-blaster-audio' },
   ),
 )

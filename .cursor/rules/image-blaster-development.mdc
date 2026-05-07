@@ -1,19 +1,19 @@
 ---
-description: Cursor-only development guidance for the IMAGE-FRIEND repository
+description: Cursor-only development guidance for the IMAGE-BLASTER repository
 alwaysApply: true
 ---
 
-# IMAGE-FRIEND Development
+# IMAGE-BLASTER Development
 
 - This Cursor rule is for repository development in Cursor only. Do not mirror this into root `CLAUDE.md`; Claude Code end users should consume `.claude/rules/project.md` and `.claude/skills/*/SKILL.md`.
-- IMAGE-FRIEND has two main parts:
+- IMAGE-BLASTER has two main parts:
   - Claude Skills in `.claude/skills/`, backed by scripts in `.claude/scripts/`.
   - The React viewer in `app/`, built with TypeScript, Vite, React Three Fibre, SparkJS, Leva, Wouter, and Tailwind CSS.
 - The shared working area is `worlds/`, and staged user input starts in `input/`. Both are gitignored.
-- The canonical Image Friend file convention lives in `.claude/rules/project.md`. Keep generated state simple: `ls -a` first, visible indexed artifacts for outputs, hidden request JSON for request/resume details.
+- The canonical Image Blast file convention lives in `.claude/rules/project.md`. Keep generated state simple: `ls -a` first, visible indexed artifacts for outputs, hidden request JSON for request/resume details.
 - Environment keys:
-  - `WORLD_LABS_API_KEY` for `/image-friend-world`.
-  - `FAL_KEY` for `/image-friend-3d`, `/image-friend-sfx`, and FAL-backed image editing.
+  - `WORLD_LABS_API_KEY` for `/image-blast-world`.
+  - `FAL_KEY` for `/image-blast-3d`, `/image-blast-sfx`, and FAL-backed image editing.
 - The repository root is the Bun workspace root. Run package-manager commands from the root; do not create ad hoc root dependencies outside the workspace.
   - `bun install`
   - `bun run dev`

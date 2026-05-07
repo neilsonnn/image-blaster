@@ -1,18 +1,18 @@
 ---
-description: Keep Image Friend state composable, colocated, and derived from generated files
+description: Keep Image Blast state composable, colocated, and derived from generated files
 alwaysApply: true
 ---
 
-# Image Friend Composition
+# Image Blast Composition
 
-- Follow `.claude/rules/project.md` as the canonical Image Friend file convention for the end user (Claude Code users). Keep this Cursor rule as reinforcement only.
+- Follow `.claude/rules/project.md` as the canonical Image Blast file convention for the end user (Claude Code users). Keep this Cursor rule as reinforcement only.
 - Simplification is the top priority. Prefer deleting state, helpers, manifests, and orchestration layers when the directory layout and small JSON files already explain what happened.
 - Use one generic convention for generated things: visible indexed artifacts plus colocated hidden request JSON. Do not create object-specific, SFX-specific, plate-specific, or asset-type-specific state systems.
 - Agents should inspect generated state with `ls -a <directory>` first. A directory listing should be enough to understand high-level progress; read visible artifacts or hidden request JSON only when more detail is needed.
 - Keep durable JSON tiny. Store identity, user-authored intent, provenance, and API inputs that cannot be inferred from files. Do not duplicate generated file lists, counts, stages, completion status, or request lifecycle in central JSON or `object.json`.
 - Avoid helper creep. Do not add directory-specific snapshot helpers or wrappers for simple operations an agent can infer from `ls -a`, indexed filenames, and small JSON files. Keep helpers generic, rare, and clearly worth their complexity.
 - For paid or long-running requests, persist request IDs before polling in colocated hidden request JSON. Request metadata should be compact, sanitized, and named with the indexed convention `.N-slug-request.json`.
-- Invoke generation through matching background agents, not parallel Skill calls: `Agent(image-friend-world)`, `Agent(image-friend-3d)`, `Agent(image-friend-sfx)`, `Agent(image-friend-plate)`, or `Agent(image-friend-edit)`.
+- Invoke generation through matching background agents, not parallel Skill calls: `Agent(image-blast-world)`, `Agent(image-blast-3d)`, `Agent(image-blast-sfx)`, `Agent(image-blast-plate)`, or `Agent(image-blast-edit)`.
 - Align generated artifacts with request indexes so related files are easy to inspect together, such as `0-object.png`, `0-object.glb`, `.0-object__image-request.json`, and `.0-object__model-request.json`.
 - Read request semantics like `kind`, `role`, provider, and status from JSON contents, not from filename suffixes.
 - Do not preserve compatibility with unshipped branch state. If a JSON shape is wrong or bloated, replace it outright instead of layering legacy shims.

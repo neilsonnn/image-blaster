@@ -1,10 +1,10 @@
 ---
-name: image-friend-sfx
+name: image-blast-sfx
 description: Generate and post-process a clean sound effect, object impact, or ambient loop.
 argument-hint: [world-name] [world ambience, object-id impact, or custom SFX prompt]
 allowed-tools: Read Write Glob Bash(ls *) Bash(node .claude/scripts/project/project-state.mjs *) Bash(node .claude/scripts/project/ensure-local-assets.mjs *) Bash(node .claude/scripts/sfx/fal-elevenlabs-sfx.mjs *)
 context: fork
-agent: image-friend-sfx
+agent: image-blast-sfx
 ---
 
 Generate an SFX for project `$0`.

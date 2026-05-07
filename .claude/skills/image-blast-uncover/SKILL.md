@@ -1,5 +1,5 @@
 ---
-name: image-friend-uncover
+name: image-blast-uncover
 description: Deeply analyze source images into literal scene and object descriptions. Use when the user wants image understanding, scene captions, atmosphere, source image JSON files, object directories, or 3D object candidates.
 argument-hint: [world-name] [optional image paths or instructions]
 allowed-tools: Read Write Glob Bash(ls *) Bash(node .claude/scripts/project/project-state.mjs *) Bash(node .claude/scripts/project/show-folder.mjs *)
@@ -24,7 +24,7 @@ If no source images exist after staging and the user needs to add images, open t
 node .claude/scripts/project/show-folder.mjs input
 ```
 
-3. Read `IMAGE-FRIEND.md` in this skill directory and follow its JSON contract exactly.
+3. Read `IMAGE-BLAST.md` in this skill directory and follow its JSON contract exactly.
 4. Gather source images from explicit paths in `$ARGUMENTS` and `worlds/$0/source/`. Use `input/` only through the project-state staging step so source paths are stable. Source images use indexed families (`0-<slug>.<ext>`, `1-<slug>.png`, etc.); by default, analyze the latest image in each family and do not treat every historical plate/edit as separate evidence unless requested.
 5. Analyze one source image at a time:
    - Read the image directly using agent image understanding.
@@ -76,7 +76,7 @@ worlds/$0/output/<object-slug>/object.json
 Object files store durable identity, intent, and provenance only. Do not write generated state such as `status`, `jobs`, generated `files`, request lifecycle, or completion data into `object.json`. Generated outputs and request state live beside `object.json` as indexed visible artifacts and hidden request JSON.
 
 11. After object files are written, handle the clean plate decision:
-   - In one-shot mode, continue with `Agent(image-friend-plate)` and wait for it before world generation.
+   - In one-shot mode, continue with `Agent(image-blast-plate)` and wait for it before world generation.
    - Otherwise ask whether to remove confirmed objects any anything else the user wants to remove from the source image to create a clean plate to generate a world from.
 
 12. Refresh derived project state:

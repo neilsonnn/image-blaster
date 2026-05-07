@@ -1,10 +1,10 @@
 ---
-name: image-friend-3d
+name: image-blast-3d
 description: Generate one specified 3D object. Use when the user names exactly one object to make, or provides one image plus the object name/description.
 argument-hint: [world-name] [object-id/name or image path + object description] [--provider meshy|hunyuan] [--target-polycount N] [--face-count N] [--enable-pbr true|false]
 allowed-tools: Read Write Glob Bash(ls *) Bash(node .claude/scripts/project/project-state.mjs *) Bash(node .claude/scripts/project/ensure-local-assets.mjs *) Bash(node .claude/scripts/asset-pipeline/generate-single-asset.mjs *)
 context: fork
-agent: image-friend-3d
+agent: image-blast-3d
 ---
 
 Create exactly one 3D object for project `$0`.

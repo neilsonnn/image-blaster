@@ -1,4 +1,4 @@
-# IMAGE-FRIEND
+# IMAGE-BLAST
 
 Use this prompt/spec to create literal image and scene descriptions for downstream world, object, and sound generation.
 
