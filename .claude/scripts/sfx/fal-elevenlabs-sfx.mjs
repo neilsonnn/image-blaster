@@ -315,7 +315,7 @@ export async function generateSfx(options) {
 
   await ensureDir(outputDir);
   const extension = extensionForOutputFormat(outputFormat);
-  const shouldPostprocess = asBool(postprocess, true);
+  const shouldPostprocess = asBool(postprocess, true) && !loop;
   if (shouldPostprocess) {
     await assertAudioTools();
     if (!canPostprocessExtension(extension)) {

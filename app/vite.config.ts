@@ -1,4 +1,4 @@
-import { defineConfig, type Plugin } from 'vite'
+import { defineConfig, type Plugin, type ViteDevServer } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 import fs from 'fs'
@@ -12,6 +12,13 @@ type WorldManifest = Record<string, unknown> & {
       spz_urls?: Record<string, string | undefined>
     }
   }
+}
+
+type ProjectManifest = Record<string, unknown> & {
+  slug?: string
+  display_name?: string
+  created_at?: string
+  updated_at?: string
 }
 
 type FileWithName = { name: string }
@@ -107,6 +114,7 @@ export function worldsUrl(slug: string, relativePath: string) {
 function worldsPlugin(): Plugin {
   const VIRTUAL_ID = 'virtual:worlds'
   const RESOLVED_ID = '\0' + VIRTUAL_ID
+  const WORLD_CHANGE_EVENT = 'worlds-changed'
   const worldsDir = path.resolve(__dirname, '../worlds')
   const RESERVED_OUTPUT_DIRS = new Set(['world', 'sfx'])
   const MODEL_EXTENSIONS = new Set(['.glb'])
@@ -114,9 +122,6 @@ function worldsPlugin(): Plugin {
   const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.avif'])
   const PROJECT_VERSION = 1
   const WORLD_SPZ_KEYS = new Set(['100k', '150k', '500k', 'full_res'])
-  let activeWorldSlug: string | null = null
-  let activeWorldEditing = false
-  let hotReloadEnabled = true
 
   function readSourceImageVersions(slug: string) {
     const sourceDir = path.join(worldsDir, slug, 'source')
@@ -251,6 +256,50 @@ function worldsPlugin(): Plugin {
     }
 
     return undefined
+  }
+
+  function displayNameFromSlug(slug: string) {
+    return slug
+      .split('-')
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ')
+  }
+
+  function readProjectManifest(slug: string): ProjectManifest | undefined {
+    const projectPath = path.join(worldsDir, slug, 'project.json')
+    if (!fs.existsSync(projectPath) || !fs.statSync(projectPath).isFile()) return undefined
+    try {
+      return JSON.parse(fs.readFileSync(projectPath, 'utf-8')) as ProjectManifest
+    } catch {
+      return undefined
+    }
+  }
+
+  function fallbackWorldFromProject(slug: string, project: ProjectManifest): WorldManifest {
+    return {
+      world_id: project.slug ?? slug,
+      display_name: project.display_name ?? displayNameFromSlug(slug),
+      world_marble_url: '',
+      tags: null,
+      world_prompt: null,
+      created_at: project.created_at ?? null,
+      updated_at: project.updated_at ?? null,
+      assets: {
+        mesh: { collider_mesh_url: '' },
+        imagery: { pano_url: '' },
+        splats: {
+          spz_urls: {},
+          semantics_metadata: {
+            metric_scale_factor: 1,
+            ground_plane_offset: 0,
+            flip_y: true,
+          },
+        },
+        thumbnail_url: '',
+        caption: '',
+      },
+    }
   }
 
   function withLocalWorldAssets(slug: string, world: WorldManifest, index?: number) {
@@ -401,45 +450,10 @@ function worldsPlugin(): Plugin {
     }
   }
 
-  function isSceneProjectFile(file: string) {
-    const relative = path.relative(worldsDir, file)
-    if (relative.startsWith('..') || path.isAbsolute(relative)) return false
-    const parts = relative.split(path.sep)
-    return parts.length === 2 && parts[1] === 'scene.json'
-  }
-
   function hasHiddenPathPart(file: string) {
     const relative = path.relative(worldsDir, file)
     if (relative.startsWith('..') || path.isAbsolute(relative)) return false
     return relative.split(path.sep).some((part) => part.startsWith('.'))
-  }
-
-  function isTopLevelWorldDir(file: string) {
-    const relative = path.relative(worldsDir, file)
-    if (relative.startsWith('..') || path.isAbsolute(relative)) return false
-    const parts = relative.split(path.sep)
-    return parts.length === 1 && Boolean(parts[0]) && !parts[0].startsWith('.')
-  }
-
-  function isWorldProjectFile(file: string) {
-    const relative = path.relative(worldsDir, file)
-    if (relative.startsWith('..') || path.isAbsolute(relative)) return false
-    const parts = relative.split(path.sep)
-    return parts.length === 2 && parts[1] === 'project.json'
-  }
-
-  function isWorldManifestFile(file: string) {
-    const relative = path.relative(worldsDir, file)
-    if (relative.startsWith('..') || path.isAbsolute(relative)) return false
-    const parts = relative.split(path.sep)
-    return parts.length === 4 && parts[1] === 'output' && parts[2] === 'world' && /^\d+-world\.json$/.test(parts[3])
-  }
-
-  function isActiveWorldOutputPath(file: string) {
-    if (!activeWorldSlug) return false
-    const outputDir = path.join(worldsDir, activeWorldSlug, 'output')
-    const relative = path.relative(outputDir, file)
-    return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative))
   }
 
   function worldSlugForFile(file: string) {
@@ -448,19 +462,29 @@ function worldsPlugin(): Plugin {
     return relative.split(path.sep)[0] || null
   }
 
+  function isVisibleWorldPath(file: string) {
+    return Boolean(worldSlugForFile(file)) && !hasHiddenPathPart(file)
+  }
+
+  function notifyWorldsChanged(server: ViteDevServer) {
+    const mod = server.moduleGraph.getModuleById(RESOLVED_ID)
+    if (mod) server.moduleGraph.invalidateModule(mod)
+    server.ws.send({ type: 'custom', event: WORLD_CHANGE_EVENT })
+  }
+
   function readWorlds() {
     if (!fs.existsSync(worldsDir)) return []
     const entries = fs.readdirSync(worldsDir)
-      .filter((slug) => {
+      .flatMap((slug) => {
         const worldDir = path.join(worldsDir, slug)
-        return fs.statSync(worldDir).isDirectory() && Boolean(readWorldManifest(slug))
-      })
-      .map((slug) => {
+        if (!fs.statSync(worldDir).isDirectory()) return []
+        const project = readProjectManifest(slug)
+        if (!project) return []
         const manifest = readWorldManifest(slug)
-        if (!manifest) throw new Error(`No indexed world manifest found for ${slug}`)
         const worldVersions = readWorldVersions(slug)
-        const defaultWorld = worldVersions[worldVersions.length - 1]?.world ?? withLocalWorldAssets(slug, manifest.world, manifest.index)
-        return {
+        const defaultWorld = worldVersions[worldVersions.length - 1]?.world
+          ?? (manifest ? withLocalWorldAssets(slug, manifest.world, manifest.index) : fallbackWorldFromProject(slug, project))
+        return [{
           slug,
           world: defaultWorld,
           worldVersions,
@@ -470,7 +494,7 @@ function worldsPlugin(): Plugin {
           sourceImageVersions: readSourceImageVersions(slug),
           worldSfxUrls: readWorldSfxUrls(slug),
           sceneProject: readSceneProject(slug),
-        }
+        }]
       })
     const allObjectAssets = entries.flatMap((entry) => entry.objectAssets)
     return entries.map((entry) => ({ ...entry, allObjectAssets }))
@@ -500,59 +524,19 @@ function worldsPlugin(): Plugin {
       }
     },
     handleHotUpdate({ file, server }) {
-      const RELOAD_EXTENSIONS = new Set(['.glb', '.spz', '.mp3', '.ogg', '.wav', '.m4a', '.opus', '.json'])
-      const worldSlug = worldSlugForFile(file)
-      if (!worldSlug) return
-      if (hasHiddenPathPart(file)) return []
-      const isSceneProject = isSceneProjectFile(file)
-      const isActiveWorldFile = activeWorldSlug !== null && worldSlug === activeWorldSlug
-      const shouldReloadWorldsModule = isWorldProjectFile(file) ||
-        (isActiveWorldFile && (
-          isWorldManifestFile(file) ||
-          isActiveWorldOutputPath(file) ||
-          (isSceneProject && !activeWorldEditing) ||
-          (RELOAD_EXTENSIONS.has(path.extname(file).toLowerCase()) && !isSceneProject)
-        ))
-      if (!shouldReloadWorldsModule) return
-      if (!hotReloadEnabled) return []
-      if (shouldReloadWorldsModule) {
-        const mod = server.moduleGraph.getModuleById(RESOLVED_ID)
-        if (mod) server.moduleGraph.invalidateModule(mod)
-        server.ws.send({ type: 'full-reload' })
-        return []
-      }
+      if (!isVisibleWorldPath(file)) return
+      notifyWorldsChanged(server)
+      return []
     },
     configureServer(server) {
       server.watcher.add(worldsDir)
-      const invalidateWorldsModule = () => {
-        const mod = server.moduleGraph.getModuleById(RESOLVED_ID)
-        if (mod) server.moduleGraph.invalidateModule(mod)
+      const onWorldFsChange = (file: string) => {
+        if (isVisibleWorldPath(file)) notifyWorldsChanged(server)
       }
-      const reloadWorldsModule = () => {
-        invalidateWorldsModule()
-        server.ws.send({ type: 'full-reload' })
-      }
-      const shouldReloadSceneProject = (file: string) => {
-        if (activeWorldEditing || !isSceneProjectFile(file)) return false
-        const worldSlug = worldSlugForFile(file)
-        return Boolean(worldSlug && (activeWorldSlug === null || worldSlug === activeWorldSlug))
-      }
-      server.watcher.on('add', (file) => {
-        if (!hotReloadEnabled || hasHiddenPathPart(file) || (!isActiveWorldOutputPath(file) && !isWorldProjectFile(file) && !shouldReloadSceneProject(file))) return
-        reloadWorldsModule()
-      })
-      server.watcher.on('unlink', (file) => {
-        if (!hotReloadEnabled || hasHiddenPathPart(file) || (!isActiveWorldOutputPath(file) && !isWorldProjectFile(file) && !shouldReloadSceneProject(file))) return
-        reloadWorldsModule()
-      })
-      server.watcher.on('addDir', (file) => {
-        if (!hotReloadEnabled || hasHiddenPathPart(file) || (!isTopLevelWorldDir(file) && !isActiveWorldOutputPath(file))) return
-        reloadWorldsModule()
-      })
-      server.watcher.on('unlinkDir', (file) => {
-        if (!hotReloadEnabled || hasHiddenPathPart(file) || (!isTopLevelWorldDir(file) && !isActiveWorldOutputPath(file))) return
-        reloadWorldsModule()
-      })
+      server.watcher.on('add', onWorldFsChange)
+      server.watcher.on('addDir', onWorldFsChange)
+      server.watcher.on('unlink', onWorldFsChange)
+      server.watcher.on('unlinkDir', onWorldFsChange)
       const MIME: Record<string, string> = {
         '.spz': 'application/octet-stream',
         '.glb': 'model/gltf-binary',
@@ -566,41 +550,10 @@ function worldsPlugin(): Plugin {
         '.opus': 'audio/ogg',
         '.json': 'application/json',
       }
-      server.middlewares.use('/__active-world', (req, res) => {
-        const requestUrl = new URL(req.url || '/', 'http://localhost')
-        const slug = requestUrl.searchParams.get('slug')
-        const editing = requestUrl.searchParams.get('editing')
-        if (!slug) {
-          res.statusCode = 400
-          res.end('Missing slug')
-          return
-        }
-
-        const worldDir = path.resolve(worldsDir, slug)
-        const isInsideWorlds = worldDir !== worldsDir && worldDir.startsWith(`${worldsDir}${path.sep}`)
-        if (!isInsideWorlds) {
-          res.statusCode = 400
-          res.end('Invalid slug')
-          return
-        }
-
-        activeWorldSlug = slug
-        activeWorldEditing = editing === 'true'
-        res.statusCode = 204
-        res.end()
-      })
-      server.middlewares.use('/__hot-reload', (req, res) => {
-        const requestUrl = new URL(req.url || '/', 'http://localhost')
-        const enabled = requestUrl.searchParams.get('enabled')
-        if (enabled !== 'true' && enabled !== 'false') {
-          res.statusCode = 400
-          res.end('Missing enabled')
-          return
-        }
-
-        hotReloadEnabled = enabled === 'true'
-        res.statusCode = 204
-        res.end()
+      server.middlewares.use('/__worlds', (_req, res) => {
+        res.setHeader('Cache-Control', 'no-store')
+        res.setHeader('Content-Type', 'application/json')
+        res.end(JSON.stringify(readWorlds()))
       })
       server.middlewares.use('/__open-world-folder', (req, res) => {
         const requestUrl = new URL(req.url || '/', 'http://localhost')
@@ -702,7 +655,6 @@ function worldsPlugin(): Plugin {
 
             fs.mkdirSync(path.dirname(filePath), { recursive: true })
             fs.writeFileSync(filePath, `${JSON.stringify(project, null, 2)}\n`)
-            invalidateWorldsModule()
             res.setHeader('Content-Type', 'application/json')
             res.end(JSON.stringify(project))
           } catch {

@@ -11,7 +11,7 @@ interface Props {
   intensity: number
 }
 
-const BACKGROUND_BLURRINESS = 1
+const BACKGROUND_BLURRINESS = 0.4
 
 export const EnvironmentMap = forwardRef<EnvironmentMapHandle, Props>(
   function EnvironmentMap({ panoUrl, intensity }, ref) {

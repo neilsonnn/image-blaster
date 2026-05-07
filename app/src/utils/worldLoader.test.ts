@@ -60,7 +60,7 @@ const exampleEntry: WorldEntry = {
 
 vi.mock('virtual:worlds', () => ({ default: [exampleEntry] }))
 
-const { loadWorlds, getSplatUrl } = await import('./worldLoader')
+const { loadWorlds, fetchWorlds, getSplatUrl } = await import('./worldLoader')
 
 describe('worldLoader', () => {
   it('returns WorldEntry array with correct slug', () => {
@@ -68,6 +68,20 @@ describe('worldLoader', () => {
     expect(worlds).toHaveLength(1)
     expect(worlds[0].slug).toBe('example')
     expect(worlds[0].world.display_name).toBe('Example World')
+  })
+
+  it('fetches fresh world metadata in dev', async () => {
+    const fetchedWorlds = [{ ...exampleEntry, slug: 'fresh-example' }]
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(fetchedWorlds),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(fetchWorlds()).resolves.toEqual(fetchedWorlds)
+    expect(fetchMock).toHaveBeenCalledWith('/__worlds', { cache: 'no-store' })
+
+    vi.unstubAllGlobals()
   })
 
   it('getSplatUrl always uses full-res', () => {

@@ -1,6 +1,6 @@
 ---
 name: image-blast-uncover
-description: Deeply analyze source images into literal scene and object descriptions. Use when the user wants image understanding, scene captions, atmosphere, source image JSON files, object directories, or 3D object candidates.
+description: Main image analysis skill, object generation, plate decisionmaking, and initial scene description. Use this skill when user wants to create objects and necessary for main image analysis.  
 argument-hint: [world-name] [optional image paths or instructions]
 allowed-tools: Read Write Glob Bash(ls *) Bash(node .claude/scripts/project/project-state.mjs *) Bash(node .claude/scripts/project/show-folder.mjs *)
 ---

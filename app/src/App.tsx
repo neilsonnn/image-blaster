@@ -1,16 +1,15 @@
-import { Suspense, lazy, useCallback, useEffect, useState } from 'react'
+import { Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react'
 import { useRoute, useLocation, Redirect } from 'wouter'
 import { WorldViewer } from './components/WorldViewer'
 import { WorldSidebar } from './components/WorldSidebar'
 import { BottomLeftControls } from './components/BottomLeftControls'
 import { TouchControls } from './components/TouchControls'
 import { useSceneProject } from './modules/scene/useSceneProject'
-import { loadWorlds } from './utils/worldLoader'
+import { fetchWorlds, loadWorlds } from './utils/worldLoader'
 import { useDebugStore } from './store/debug'
 import { isEditableTarget } from './utils/dom'
-import type { WorldObjectAsset } from './types/world'
+import type { WorldEntry, WorldObjectAsset } from './types/world'
 
-const worlds = loadWorlds()
 const LevaPanel = import.meta.env.DEV
   ? lazy(() => import('leva').then((module) => ({ default: module.Leva })))
   : null
@@ -19,17 +18,42 @@ const DebugPanel = import.meta.env.DEV
   : null
 
 export function App() {
-  const [editMatch, editParams] = useRoute('/:slug/edit')
-  const [match, params] = useRoute('/:slug')
-  const levaCollapsed = useDebugStore((s) => s.levaCollapsed)
-  const setLevaCollapsed = useDebugStore((s) => s.setLevaCollapsed)
-  const hotReloadEnabled = useDebugStore((s) => s.hotReloadEnabled)
-  const [location] = useLocation()
-  const [uiHidden, setUiHidden] = useState(false)
-  const [sceneProjectEnabled, setSceneProjectEnabled] = useState(true)
-  const [selectedWorldVersions, setSelectedWorldVersions] = useState<Record<string, number>>({})
-  const [hoveredObjectAssetId, setHoveredObjectAssetId] = useState<string | null>(null)
-  const [hoveredObjectInstanceId, setHoveredObjectInstanceId] = useState<string | null>(null)
+  const [worlds, setWorlds] = useState(loadWorlds)
+  const [refreshingWorlds, setRefreshingWorlds] = useState(false)
+  const refreshTimeoutRef = useRef<number | undefined>(undefined)
+
+  const refreshWorlds = useCallback(async () => {
+    if (!import.meta.env.DEV) return
+    setRefreshingWorlds(true)
+    try {
+      setWorlds(await fetchWorlds())
+    } catch (error) {
+      console.warn('Could not refresh local world assets.', error)
+    } finally {
+      setRefreshingWorlds(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    refreshWorlds()
+  }, [refreshWorlds])
+
+  useEffect(() => {
+    if (!import.meta.env.DEV) return
+
+    const refreshSoon = () => {
+      window.clearTimeout(refreshTimeoutRef.current)
+      refreshTimeoutRef.current = window.setTimeout(() => {
+        void refreshWorlds()
+      }, 150)
+    }
+
+    import.meta.hot?.on('worlds-changed', refreshSoon)
+    return () => {
+      window.clearTimeout(refreshTimeoutRef.current)
+      import.meta.hot?.off('worlds-changed', refreshSoon)
+    }
+  }, [refreshWorlds])
 
   if (!worlds.length) {
     return (
@@ -38,6 +62,35 @@ export function App() {
       </div>
     )
   }
+
+  return (
+    <LoadedApp
+      worlds={worlds}
+      refreshingWorlds={refreshingWorlds}
+      onRefreshWorlds={refreshWorlds}
+    />
+  )
+}
+
+function LoadedApp({
+  worlds,
+  refreshingWorlds,
+  onRefreshWorlds,
+}: {
+  worlds: WorldEntry[]
+  refreshingWorlds: boolean
+  onRefreshWorlds: () => void
+}) {
+  const [editMatch, editParams] = useRoute('/:slug/edit')
+  const [match, params] = useRoute('/:slug')
+  const levaCollapsed = useDebugStore((s) => s.levaCollapsed)
+  const setLevaCollapsed = useDebugStore((s) => s.setLevaCollapsed)
+  const [location] = useLocation()
+  const [uiHidden, setUiHidden] = useState(false)
+  const [sceneProjectEnabled, setSceneProjectEnabled] = useState(true)
+  const [selectedWorldVersions, setSelectedWorldVersions] = useState<Record<string, number>>({})
+  const [hoveredObjectAssetId, setHoveredObjectAssetId] = useState<string | null>(null)
+  const [hoveredObjectInstanceId, setHoveredObjectInstanceId] = useState<string | null>(null)
 
   const slug = editParams?.slug ?? params?.slug ?? worlds[0].slug
   const entry = worlds.find((w) => w.slug === slug) ?? worlds[0]
@@ -80,21 +133,6 @@ export function App() {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [showLeva])
 
-  useEffect(() => {
-    if (!import.meta.env.DEV) return
-    const params = new URLSearchParams({ slug: entry.slug, editing: String(editing) })
-    fetch(`/__active-world?${params.toString()}`).catch((error) => {
-      console.warn(`Could not update active world to "${entry.slug}".`, error)
-    })
-  }, [editing, entry.slug])
-
-  useEffect(() => {
-    if (!import.meta.env.DEV) return
-    fetch(`/__hot-reload?enabled=${hotReloadEnabled}`).catch((error) => {
-      console.warn('Could not update hot reload sync setting.', error)
-    })
-  }, [hotReloadEnabled])
-
   if (!editMatch && !match) {
     return <Redirect to={`/${worlds[0].slug}`} />
   }
@@ -128,6 +166,8 @@ export function App() {
         uiVisible={uiVisible}
         onObjectHover={handleObjectHover}
         onSceneProjectSaved={updateSceneProject}
+        onRefreshWorlds={onRefreshWorlds}
+        refreshingWorlds={refreshingWorlds}
       />
       {!editing && uiVisible && (
         <>

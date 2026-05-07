@@ -22,7 +22,7 @@ Generate an SFX for project `$0`.
  - Object impact: `impact one-shot, short-decay, <object material description from object.json> hitting a hard surface`.
   - World ambience: `ambient environment, loop of <description of only ambient qualities of scene from image.json>`.
   - Custom SFX: keep it literal, short, and isolated unless the user requested ambience or a loop.
-- The script analyzes each returned file with `ffprobe`/`ffmpeg`, trims leading/trailing silence or low noise, normalizes loudness, and stores `audio_analysis` in the hidden request JSON.
+- For non-loop output, the script analyzes each returned file with `ffprobe`/`ffmpeg`, trims leading/trailing silence or low noise, normalizes loudness, and stores `audio_analysis` in the hidden request JSON. Loop output is left as raw provider audio so the seamless boundary is preserved.
 
 ```bash
 node .claude/scripts/project/project-state.mjs --world "$0"

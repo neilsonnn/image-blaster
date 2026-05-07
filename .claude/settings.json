@@ -1,8 +1,20 @@
 {
   "permissions": {
     "allow": [
+      "Skill(image-blast-project)",
+      "Skill(image-blast-uncover)",
+      "Skill(image-blast-world)",
+      "Skill(image-blast-3d)",
+      "Skill(image-blast-sfx)",
+      "Skill(image-blast-plate)",
+      "Skill(image-blast-edit)",
+      "Skill(image-blast-wildcard)",
       "Bash(ls:*)",
       "Bash(node .claude/scripts/project/project-state.mjs:*)",
+      "Bash(node .claude/scripts/project/indexed-path.mjs:*)",
+      "Bash(node .claude/scripts/project/download.mjs:*)",
+      "Bash(node .claude/scripts/project/delete.mjs:*)",
+      "Bash(node .claude/scripts/project/ensure-local-assets.mjs:*)",
       "Bash(node .claude/scripts/project/show-folder.mjs:*)",
       "Bash(node .claude/scripts/project/show-path.mjs:*)",
       "Bash(node .claude/scripts/image-edit/generate-edit.mjs:*)",

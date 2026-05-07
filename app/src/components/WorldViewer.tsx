@@ -113,6 +113,8 @@ interface Props {
   uiVisible?: boolean
   onObjectHover?: (asset: WorldObjectAsset, hovering: boolean, instanceId?: string) => void
   onSceneProjectSaved?: (project: WorldSceneProject) => void
+  onRefreshWorlds?: () => void
+  refreshingWorlds?: boolean
 }
 
 export function WorldViewer({
@@ -131,6 +133,8 @@ export function WorldViewer({
   uiVisible = true,
   onObjectHover,
   onSceneProjectSaved,
+  onRefreshWorlds,
+  refreshingWorlds = false,
 }: Props) {
   const charRef = useRef<CharHandle>(null)
   const worldRenderMode = useDebugStore((s) => s.worldRenderMode)
@@ -142,8 +146,6 @@ export function WorldViewer({
   const environmentIntensity = useDebugStore((s) => s.environmentIntensity)
   const sunIntensity = useDebugStore((s) => s.sunIntensity)
   const sunColor = useDebugStore((s) => s.sunColor)
-  const hotReloadEnabled = useDebugStore((s) => s.hotReloadEnabled)
-  const setHotReloadEnabled = useDebugStore((s) => s.setHotReloadEnabled)
   const [sourceThumbnailCollapsed, setSourceThumbnailCollapsed] = useState(false)
   const [sourcePreviewMode, setSourcePreviewMode] = useState<SourcePreviewMode>('source')
   const colliderUrl = desiredWorld.assets.mesh.collider_mesh_url.startsWith('/worlds/')
@@ -299,8 +301,8 @@ export function WorldViewer({
           plateImageUrl={plateImageUrl}
           objectPreviewActive={Boolean(hoveredObjectAsset)}
           thumbnailCollapsed={sourceThumbnailCollapsed}
-          hotReloadEnabled={hotReloadEnabled}
-          onHotReloadToggle={() => setHotReloadEnabled(!hotReloadEnabled)}
+          refreshingWorlds={refreshingWorlds}
+          onRefreshWorlds={onRefreshWorlds}
           onPreviewModeToggle={() => setSourcePreviewMode((mode) => mode === 'source' ? 'plate' : 'source')}
           onThumbnailCollapseToggle={() => setSourceThumbnailCollapsed((collapsed) => !collapsed)}
         />
@@ -317,8 +319,8 @@ function SourceImageControls({
   plateImageUrl,
   objectPreviewActive,
   thumbnailCollapsed,
-  hotReloadEnabled,
-  onHotReloadToggle,
+  refreshingWorlds,
+  onRefreshWorlds,
   onPreviewModeToggle,
   onThumbnailCollapseToggle,
 }: {
@@ -328,8 +330,8 @@ function SourceImageControls({
   plateImageUrl?: string
   objectPreviewActive: boolean
   thumbnailCollapsed: boolean
-  hotReloadEnabled: boolean
-  onHotReloadToggle: () => void
+  refreshingWorlds: boolean
+  onRefreshWorlds?: () => void
   onPreviewModeToggle: () => void
   onThumbnailCollapseToggle: () => void
 }) {
@@ -340,10 +342,10 @@ function SourceImageControls({
       {activeSourceImageUrl ? (
         thumbnailCollapsed ? (
           <div className="flex items-center gap-1">
-            {import.meta.env.DEV && (
-              <HotReloadButton
-                hotReloadEnabled={hotReloadEnabled}
-                onToggle={onHotReloadToggle}
+            {import.meta.env.DEV && onRefreshWorlds && (
+              <RefreshWorldsButton
+                refreshing={refreshingWorlds}
+                onRefresh={onRefreshWorlds}
                 className="pointer-events-auto"
               />
             )}
@@ -363,10 +365,10 @@ function SourceImageControls({
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30" />
             <div className="absolute bottom-0.5 right-0.5 flex items-center gap-1">
-              {import.meta.env.DEV && (
-                <HotReloadButton
-                  hotReloadEnabled={hotReloadEnabled}
-                  onToggle={onHotReloadToggle}
+              {import.meta.env.DEV && onRefreshWorlds && (
+                <RefreshWorldsButton
+                  refreshing={refreshingWorlds}
+                  onRefresh={onRefreshWorlds}
                   className="pointer-events-auto"
                 />
               )}
@@ -387,10 +389,10 @@ function SourceImageControls({
           </div>
         )
       ) : (
-        import.meta.env.DEV && (
-          <HotReloadButton
-            hotReloadEnabled={hotReloadEnabled}
-            onToggle={onHotReloadToggle}
+        import.meta.env.DEV && onRefreshWorlds && (
+          <RefreshWorldsButton
+            refreshing={refreshingWorlds}
+            onRefresh={onRefreshWorlds}
             className="pointer-events-auto"
           />
         )
@@ -463,33 +465,28 @@ function SourcePlateToggleButton({
   )
 }
 
-function HotReloadButton({
-  hotReloadEnabled,
-  onToggle,
+function RefreshWorldsButton({
+  refreshing,
+  onRefresh,
   className = '',
 }: {
-  hotReloadEnabled: boolean
-  onToggle: () => void
+  refreshing: boolean
+  onRefresh: () => void
   className?: string
 }) {
   return (
     <Tooltip
-      content={hotReloadEnabled
-        ? 'enabled hot reload, page will refresh when assets change'
-        : 'hot reload disabled, page will not refresh when assets change'}
+      content={refreshing ? 'refreshing local assets' : 'refresh local assets'}
       delayDuration={0}
       side="top"
     >
       <AppButton
-        onClick={onToggle}
-        active={hotReloadEnabled}
-        className={`h-6 w-6 justify-center rounded border border-white/15 bg-black/70 p-0 text-white shadow-lg backdrop-blur-md ${
-          hotReloadEnabled ? 'text-white' : 'text-white/25'
-        } ${className}`}
-        aria-label={hotReloadEnabled ? 'Disable hot reload sync' : 'Enable hot reload sync'}
-        aria-pressed={hotReloadEnabled}
+        onClick={onRefresh}
+        active={refreshing}
+        className={`h-6 w-6 justify-center rounded border border-white/15 bg-black/70 p-0 text-white shadow-lg backdrop-blur-md ${className}`}
+        aria-label="Refresh local assets"
       >
-        <ArrowsClockwiseIcon size={12} weight={hotReloadEnabled ? 'bold' : 'regular'} />
+        <ArrowsClockwiseIcon size={12} weight={refreshing ? 'bold' : 'regular'} />
       </AppButton>
     </Tooltip>
   )

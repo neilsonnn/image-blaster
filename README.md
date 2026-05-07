@@ -12,7 +12,9 @@
 ```
 
 ## `image-blaster`
-A Claude Code project that creates a 3D environment, SFX, and meshes from a single image.
+Creates 3D environments, SFX, and meshes from a single image using Claude skills, World Labs, and FAL. 
+
+Can take you from an image to a fully meshed 3D environment in < 5 minutes, great for jumpstarting 3D work. Go full blast.
 
 ## Quickstart
 
@@ -61,3 +63,7 @@ IMAGE-BLASTER uses a few generation models:
 - Need an environment for a robot? `IMAGE-BLAST` it.
 - A film location scout? `IMAGE-BLAST` it.
 - An architectural rendering? `IMAGE-BLAST` it.
+
+### Development
+
+- remove `/app` from the `.claudeignore` file to give Claude the ability to change the React viewer.
