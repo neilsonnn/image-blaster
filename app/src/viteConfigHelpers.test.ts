@@ -24,6 +24,14 @@ describe('vite indexed artifact helpers', () => {
       extension: '.png',
       name: '12-world-pano.PNG',
     })
+    expect(parseIndexedName('.2-tree__model-request.json')).toEqual({
+      index: 2,
+      slug: 'tree',
+      scope: 'model',
+      extension: '.json',
+      hidden: true,
+      name: '.2-tree__model-request.json',
+    })
 
     const files = indexedFiles([
       file('10-source.png'),

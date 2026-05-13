@@ -22,12 +22,18 @@ type ProjectManifest = Record<string, unknown> & {
   notes?: string
 }
 
+type RequestManifest = Record<string, unknown> & {
+  status?: string
+}
+
 type FileWithName = { name: string }
 
 export interface IndexedName {
   index: number
   slug: string
+  scope?: string
   extension: string
+  hidden?: boolean
   name: string
 }
 
@@ -53,6 +59,18 @@ function visibleFiles(dir: string) {
 }
 
 export function parseIndexedName(fileName: string): IndexedName | undefined {
+  const requestMatch = fileName.match(/^\.(\d+)-(.+?)(?:__([a-z0-9._-]+))?-request\.json$/i)
+  if (requestMatch) {
+    return {
+      index: Number(requestMatch[1]),
+      slug: requestMatch[2],
+      ...(requestMatch[3] ? { scope: requestMatch[3] } : {}),
+      extension: '.json',
+      hidden: true,
+      name: fileName,
+    }
+  }
+
   const match = fileName.match(/^(\d+)-(.+?)(\.[^.]+)$/)
   if (!match) return undefined
   return {
@@ -140,6 +158,31 @@ function worldsPlugin(): Plugin {
     return versions.find((version) => version.index === 0)?.url ?? versions[0]?.url
   }
 
+  function statusText(value: unknown) {
+    return String(value || '').toLowerCase()
+  }
+
+  function requestMetadataFiles(dir: string, slug: string, scope?: string) {
+    if (!fs.existsSync(dir)) return []
+
+    return fs.readdirSync(dir, { withFileTypes: true })
+      .flatMap((entry) => {
+        if (!entry.isFile()) return []
+        const parsed = parseIndexedName(entry.name)
+        if (!parsed?.hidden || parsed.slug !== slug || parsed.scope !== scope) return []
+
+        try {
+          return [{
+            ...parsed,
+            data: JSON.parse(fs.readFileSync(path.join(dir, entry.name), 'utf-8')) as RequestManifest,
+          }]
+        } catch {
+          return []
+        }
+      })
+      .sort((a, b) => a.index - b.index)
+  }
+
   function readObjectAssets(slug: string) {
     const outputDir = path.join(worldsDir, slug, 'output')
     if (!fs.existsSync(outputDir)) return []
@@ -151,9 +194,6 @@ function worldsPlugin(): Plugin {
         const files = visibleFiles(objectDir)
         const models = indexedFiles(files, { extensions: MODEL_EXTENSIONS })
         const images = indexedFiles(files, { extensions: IMAGE_EXTENSIONS })
-
-        if (!models.length) return []
-
         const objectJsonPath = path.join(objectDir, 'object.json')
         let displayName = entry.name
         if (fs.existsSync(objectJsonPath) && fs.statSync(objectJsonPath).isFile()) {
@@ -177,23 +217,46 @@ function worldsPlugin(): Plugin {
             ?? firstIndexed(sameIndexImages)
         }
 
-        return models.map((model) => {
-          const index = model.index
+        const imageRequests = requestMetadataFiles(objectDir, entry.name, 'image')
+        const modelRequests = requestMetadataFiles(objectDir, entry.name, 'model')
+        const indexes = new Set<number>()
+        for (const model of models) if (model.index !== undefined) indexes.add(model.index)
+        for (const request of imageRequests) indexes.add(request.index)
+        for (const request of modelRequests) indexes.add(request.index)
+
+        if (!indexes.size && models.some((model) => model.index === undefined)) {
+          indexes.add(Number.MAX_SAFE_INTEGER)
+        }
+
+        return [...indexes].sort((a, b) => a - b).flatMap((indexValue) => {
+          const index = indexValue === Number.MAX_SAFE_INTEGER ? undefined : indexValue
+          const model = models.find((candidate) => candidate.index === index)
+          const imageRequest = imageRequests.find((request) => request.index === index)
+          const modelRequest = modelRequests.find((request) => request.index === index)
           const thumbnail = thumbnailFor(index)
-          const referenceImage = referenceImageFor(model)
+          const referenceImage = model ? referenceImageFor(model) : thumbnail
+          const referenceImageUrl = referenceImage
+            ? worldsUrl(slug, path.join('output', entry.name, referenceImage.name))
+            : undefined
+          const requestStatus = statusText(modelRequest?.data.status ?? imageRequest?.data.status)
+          const complete = Boolean(model)
+          if (!complete && !imageRequest && !modelRequest) return []
+
           return {
             id: index === undefined ? entry.name : `${entry.name}-${index}`,
             assetId: index === undefined ? `${slug}/${entry.name}` : `${slug}/${entry.name}/${index}`,
             sourceWorldSlug: slug,
             baseObjectId: entry.name,
             ...(index === undefined ? {} : { index }),
-            variantLabel: versionLabel(model),
-            fileName: model.name,
+            variantLabel: model ? versionLabel(model) : `v${index}`,
+            fileName: model?.name,
             name: displayName,
-            url: worldsUrl(slug, path.join('output', entry.name, model.name)),
-            referenceImageUrl: referenceImage ? worldsUrl(slug, path.join('output', entry.name, referenceImage.name)) : undefined,
-            thumbnailUrl: thumbnail ? worldsUrl(slug, path.join('output', entry.name, thumbnail.name)) : undefined,
+            url: model ? worldsUrl(slug, path.join('output', entry.name, model.name)) : '',
+            referenceImageUrl,
+            thumbnailUrl: thumbnail ? worldsUrl(slug, path.join('output', entry.name, thumbnail.name)) : referenceImageUrl,
             sfxUrls: readSfxUrls(slug, path.join('output', entry.name, 'sfx')),
+            complete,
+            ...(!complete && requestStatus ? { status: requestStatus } : {}),
           }
         })
       })
@@ -343,24 +406,37 @@ function worldsPlugin(): Plugin {
     return [...indexes].sort((a, b) => a - b)
   }
 
+  function worldRequestIndexes(slug: string) {
+    const worldDir = path.join(worldsDir, slug, 'output', 'world')
+    return requestMetadataFiles(worldDir, 'world').map((request) => request.index)
+  }
+
   function readWorldVersions(slug: string) {
-    const indexes = worldAssetIndexes(slug)
+    const indexes = [...new Set([
+      ...worldAssetIndexes(slug),
+      ...worldRequestIndexes(slug),
+    ])].sort((a, b) => a - b)
 
     return indexes.flatMap((index) => {
       const files = visibleFiles(path.join(worldsDir, slug, 'output', 'world'))
+      const request = requestMetadataFiles(path.join(worldsDir, slug, 'output', 'world'), 'world')
+        .find((candidate) => candidate.index === index)
       const manifest = readWorldManifestForIndex(slug, index)
-      if (!manifest) return []
-      const world = withLocalWorldAssets(slug, manifest, index)
-      const colliderUrl = String(world.assets?.mesh?.collider_mesh_url || '')
-      const spzUrls = world.assets?.splats?.spz_urls ?? {}
+      if (!manifest && !request) return []
+      const world = manifest ? withLocalWorldAssets(slug, manifest, index) : undefined
+      const colliderUrl = String(world?.assets?.mesh?.collider_mesh_url || '')
+      const spzUrls = world?.assets?.splats?.spz_urls ?? {}
       const plate = worldAssetFilename(files, index, 'world-plate', IMAGE_EXTENSIONS)
       const plateImageUrl = plate ? worldAssetUrl(slug, plate) : undefined
+      const requestStatus = statusText(request?.data.status)
+      const complete = Boolean(world && colliderUrl && Object.keys(spzUrls).length)
       return {
         index,
         label: `v${index}`,
-        world,
+        ...(world ? { world } : {}),
         ...(plateImageUrl ? { plateImageUrl } : {}),
-        complete: Boolean(colliderUrl && Object.keys(spzUrls).length),
+        complete,
+        ...(!complete && requestStatus ? { status: requestStatus } : {}),
       }
     })
   }
@@ -443,6 +519,17 @@ function worldsPlugin(): Plugin {
     return Boolean(worldSlugForFile(file)) && !hasHiddenPathPart(file)
   }
 
+  function isGeneratedRequestPath(file: string) {
+    const worldSlug = worldSlugForFile(file)
+    const parsed = parseIndexedName(path.basename(file))
+    if (!worldSlug || !parsed?.hidden) return false
+
+    const relativeParts = path.relative(path.join(worldsDir, worldSlug), file).split(path.sep)
+    if (relativeParts[0] !== 'output') return false
+    if (relativeParts[1] === 'world') return parsed.slug === 'world' && parsed.scope === undefined
+    return parsed.scope === 'image' || parsed.scope === 'model'
+  }
+
   function notifyWorldsChanged(server: ViteDevServer) {
     const mod = server.moduleGraph.getModuleById(RESOLVED_ID)
     if (mod) server.moduleGraph.invalidateModule(mod)
@@ -508,14 +595,14 @@ function worldsPlugin(): Plugin {
       }
     },
     handleHotUpdate({ file, server }) {
-      if (!isVisibleWorldPath(file)) return
+      if (!isVisibleWorldPath(file) && !isGeneratedRequestPath(file)) return
       notifyWorldsChanged(server)
       return []
     },
     configureServer(server) {
       server.watcher.add(worldsDir)
       const onWorldFsChange = (file: string) => {
-        if (isVisibleWorldPath(file)) notifyWorldsChanged(server)
+        if (isVisibleWorldPath(file) || isGeneratedRequestPath(file)) notifyWorldsChanged(server)
       }
       server.watcher.on('add', onWorldFsChange)
       server.watcher.on('addDir', onWorldFsChange)

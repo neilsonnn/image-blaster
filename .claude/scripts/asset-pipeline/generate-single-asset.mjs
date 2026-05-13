@@ -115,12 +115,6 @@ function buildDirectObject({ objectId, objectName, description, image, world }) 
   };
 }
 
-function buildPrompt(object) {
-  const location = object.evidence?.[0]?.location_in_image;
-  const where = location ? ` (${location})` : "";
-  return `Isolate the ${object.name}${where} from this image. Reproduce it exactly as shown — same colors, materials, proportions, count, and accessories. White background, centered, tight crop, studio lighting. No other objects, no scene, no people, no text, no shadows on the ground.`;
-}
-
 function resolve3DProvider(value = DEFAULT_3D_PROVIDER) {
   const normalized = String(value || DEFAULT_3D_PROVIDER).trim().toLowerCase();
   const provider = MODEL_PROVIDER_ALIASES.get(normalized);
@@ -360,6 +354,7 @@ export async function generateSingleObject(options) {
     directImage,
     objectName,
     description,
+    imageEditPrompt,
     regenerate = false,
     imageEditProvider,
     modelProvider,
@@ -448,11 +443,16 @@ export async function generateSingleObject(options) {
             ? usableImageRequest
             : undefined;
       imageMetadataPath = imageRequest?.path || requestPath(resolved.objectDir, requestIndex, object.id, "image");
+      if (!imageRequest && !imageEditPrompt) {
+        throw new Error(
+          `Image edit prompt is required to create a reference image for ${object.id}. Pass --image-edit-prompt "<prompt>".`
+        );
+      }
       const imageEdit = imageRequest
         ? await resumeFalRequest(imageRequest, "image-edit", resolved.objectDir)
         : await runImageEdit({
             provider: imageEditProvider || object.image_edit_provider,
-            prompt: buildPrompt(object),
+            prompt: imageEditPrompt,
             images: sourceImages,
             outputDir: resolved.objectDir,
             metadataPath: imageMetadataPath,
@@ -592,7 +592,7 @@ async function main() {
 
   if (!world || (!objectId && !directImage)) {
     throw new Error(
-      "Usage: node generate-single-asset.mjs --world <world-name> (--object-id <object-id> | --image <path>) [--object-name <name>] [--description <text>] [--provider hunyuan|meshy] [--regenerate] [--regenerate-reference] [--reference-only] [--face-count <40000-1500000>] [--generate-type Normal|LowPoly|Geometry] [--polygon-type triangle|quadrilateral] [--target-polycount 30000] [--enable-pbr true|false]"
+      "Usage: node generate-single-asset.mjs --world <world-name> (--object-id <object-id> | --image <path>) --image-edit-prompt <prompt> [--object-name <name>] [--description <text>] [--provider hunyuan|meshy] [--regenerate] [--regenerate-reference] [--reference-only] [--face-count <40000-1500000>] [--generate-type Normal|LowPoly|Geometry] [--polygon-type triangle|quadrilateral] [--target-polycount 30000] [--enable-pbr true|false]"
     );
   }
 
@@ -602,6 +602,7 @@ async function main() {
     directImage,
     objectName: one(flags, "object-name") || one(flags, "asset-name"),
     description: one(flags, "description"),
+    imageEditPrompt: one(flags, "image-edit-prompt") || one(flags, "prompt"),
     regenerate: Boolean(flags.regenerate),
     regenerateReference: Boolean(flags["regenerate-reference"]),
     referenceOnly: Boolean(flags["reference-only"]),

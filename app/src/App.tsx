@@ -101,6 +101,8 @@ function LoadedApp({
   const defaultWorldVersionIndex = entry.worldVersions[entry.worldVersions.length - 1]?.index
   const activeWorldVersionIndex = selectedWorldVersions[entry.slug] ?? defaultWorldVersionIndex
   const activeWorld = entry.worldVersions.find((version) => version.index === activeWorldVersionIndex)?.world ?? entry.world
+  const renderableObjectAssets = entry.objectAssets.filter((asset) => asset.complete && asset.url)
+  const renderableAllObjectAssets = entry.allObjectAssets.filter((asset) => asset.complete && asset.url)
   const { sceneProject, sceneProjectReady, updateSceneProject } = useSceneProject(entry.slug, location, entry.sceneProject)
   const sceneProjectActive = Boolean(sceneProject && sceneProjectEnabled)
 
@@ -164,8 +166,8 @@ function LoadedApp({
         slug={entry.slug}
         sourceImageUrl={entry.sourceImageUrl}
         hoveredWorldPreview={hoveredWorldPreview}
-        objectAssets={entry.objectAssets}
-        allObjectAssets={entry.allObjectAssets}
+        objectAssets={renderableObjectAssets}
+        allObjectAssets={renderableAllObjectAssets}
         worldSfxUrls={entry.worldSfxUrls}
         sceneProject={editing || sceneProjectEnabled ? sceneProject : undefined}
         sceneProjectReady={sceneProjectReady}

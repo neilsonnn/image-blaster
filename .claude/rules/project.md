@@ -90,8 +90,8 @@ When doing an IMAGE-BLAST, it can be done in one-shot by following this order:
 
 1. Inspect project state and `input/`.
 2. Initialize project with slug if needed and stage inputs into `worlds/<slug>/source/`.
-3. Once project is initialized check if something is already running on port 5173. If not, run `bun install && bun run dev` from the repository root to start the asset viewer. Then, open `http://localhost:5173/<world-slug>` for the user when possible, and report that URL to the user.
-4. Uncover/analyze the source image
+3. Immediately after staging input, check if something is already running on port 5173 with `lsof -i :5173 -sTCP:LISTEN -n -P`. If not, run `bun install && bun run dev` from the repository root to start the asset viewer. Then open the viewer for the user with `node .claude/scripts/project/show-url.mjs <world-slug>` and report the printed URL.
+4. Uncover/analyze the source image.
 5. Finish analysis, confirm objects, and write `object.json` per object. This is also the clean plate decision point: in one-shot mode, run `Agent(image-blast-plate)` and wait; otherwise ask whether to remove confirmed objects or anything else from the source image.
 6. Create a world with `Agent(image-blast-world)` from the newest source image, which may be the generated plate.
 7. Launch one 3D object agent per confirmed object to create 3D models

@@ -5,6 +5,7 @@ import { useCameraGestures } from '../camera/useCameraGestures'
 import { cameraFocusTarget } from '../camera/cameraFocus'
 import { useDebugStore } from '../../store/debug'
 import { isEditableTarget } from '../../utils/dom'
+import { CHARACTER_SPAWN } from './spawn'
 
 export interface FlyControllerHandle {
   reset: () => void
@@ -18,7 +19,6 @@ const SPEED = 6
 const SHIFT_MULT = 3
 const SMOOTH = 0.12
 const DOLLY_UNITS_PER_PIXEL = 0.02
-const CHARACTER_SPAWN = new THREE.Vector3(0, 1, 0.5)
 const DEFAULT_YAW = 0
 
 const _forward = new THREE.Vector3()
@@ -38,7 +38,7 @@ export const FlyController = forwardRef<FlyControllerHandle, FlyControllerProps>
   const smoothPitch = useRef(0)
 
   const reset = useCallback(() => {
-    camera.position.copy(CHARACTER_SPAWN)
+    camera.position.set(CHARACTER_SPAWN.x, CHARACTER_SPAWN.y, CHARACTER_SPAWN.z)
     cameraFocusTarget.current = null
     keys.current.clear()
     rawYaw.current = DEFAULT_YAW

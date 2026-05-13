@@ -50,6 +50,8 @@ export interface WorldObjectAsset {
   referenceImageUrl?: string
   thumbnailUrl?: string
   sfxUrls: string[]
+  complete: boolean
+  status?: string
 }
 
 export type Vec3Tuple = [number, number, number]
@@ -82,9 +84,10 @@ export interface WorldSceneProject {
 export interface WorldVersion {
   index: number
   label: string
-  world: World
+  world?: World
   plateImageUrl?: string
   complete: boolean
+  status?: string
 }
 
 export interface SourceImageVersion {

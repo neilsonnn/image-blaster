@@ -109,6 +109,8 @@ export function WorldSidebar({
               const selectedVersion = worldVersions.find((version) => version.index === selectedVersionIndex) ?? latestVersion
               const displayWorld = selectedVersion?.world ?? world
               const hasSplatFile = Boolean(displayWorld && Object.values(displayWorld.assets.splats.spz_urls).some(Boolean))
+              const hasWorldRow = Boolean(selectedVersion || hasSplatFile)
+              const worldLoading = Boolean(selectedVersion && !selectedVersion.complete && isLoadingStatus(selectedVersion.status))
               const sourcePreview: WorldHoverPreview = {
                 slug,
                 imageUrl: sourceImageUrl,
@@ -116,8 +118,8 @@ export function WorldSidebar({
               }
               const activeWorldPreview: WorldHoverPreview = {
                 slug,
-                imageUrl: selectedVersion?.plateImageUrl ?? sourceImageUrl,
-                alt: selectedVersion?.plateImageUrl ? `${name} world generation image` : `${name} source image`,
+                imageUrl: selectedVersion?.plateImageUrl,
+                alt: `${name} world generation image`,
               }
               return (
                 <div key={slug} className="rounded">
@@ -222,20 +224,27 @@ export function WorldSidebar({
                           </AppButton>
                         </div>
                       )}
-                      {hasSplatFile && (
+                      {hasWorldRow && (
                         <div
                           className="group flex min-w-0 items-center gap-1 rounded"
                           onMouseEnter={() => onWorldHover?.(activeWorldPreview, true)}
                           onMouseLeave={() => onWorldHover?.(activeWorldPreview, false)}
                         >
                           <div className="min-w-0 flex flex-1 items-center gap-2 rounded px-2 py-1 text-left text-white opacity-80">
-                            <span className="relative flex h-7 w-7 flex-shrink-0 items-center justify-center rounded bg-white/10 text-white/45 ring-1 ring-white/10">
-                              <GlobeHemisphereWestIcon size={14} weight="regular" />
-                              <FileExtensionBadge extension=".spz" />
+                            <span className="relative flex h-7 w-7 flex-shrink-0">
+                              {activeWorldPreview.imageUrl ? (
+                                <ChromeThumbnail thumbnailUrl={activeWorldPreview.imageUrl} alt={activeWorldPreview.alt} />
+                              ) : (
+                                <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded bg-white/10 text-white/45 ring-1 ring-white/10">
+                                  <GlobeHemisphereWestIcon size={14} weight="regular" />
+                                </span>
+                              )}
+                              {hasSplatFile && <FileExtensionBadge extension=".spz" />}
                             </span>
                             <span className="min-w-0 flex-1 text-white/85 text-xs font-semibold leading-tight truncate">
                               {slug}
                             </span>
+                            {worldLoading && <LoadingSpinner />}
                             {isActive && worldVersions.length > 1 && selectedVersion && (
                               <select
                                 value={selectedVersion.index}
@@ -268,41 +277,63 @@ export function WorldSidebar({
                           )}
                         </div>
                       )}
-                      {objectAssets.map((obj) => (
-                        <div
-                          key={obj.assetId}
-                          className={`flex min-w-0 items-center gap-2 rounded px-2 py-1 text-left group ${
-                            hoveredObjectAssetId === obj.assetId && !hoveredObjectInstanceId ? 'bg-white/10 opacity-100' : ''
-                          }`}
-                          onMouseEnter={() => onObjectHover?.(obj, true)}
-                          onMouseLeave={() => onObjectHover?.(obj, false)}
-                        >
-                          <span className="relative flex h-7 w-7 flex-shrink-0">
-                            <ChromeThumbnail thumbnailUrl={obj.thumbnailUrl} alt={obj.name} />
-                            <FileExtensionBadge extension=".obj" />
-                          </span>
-                          <span className="min-w-0 flex-1">
-                            <span className="block text-white/80 text-xs font-medium leading-tight truncate">
-                              {obj.name}
+                      {objectAssets.map((obj) => {
+                        const objectLoading = !obj.complete && isLoadingStatus(obj.status)
+                        const objectPreview: WorldHoverPreview = {
+                          slug: obj.assetId,
+                          imageUrl: obj.referenceImageUrl ?? obj.thumbnailUrl,
+                          alt: `${obj.name} reference image`,
+                        }
+                        return (
+                          <div
+                            key={obj.assetId}
+                            className={`flex min-w-0 items-center gap-2 rounded px-2 py-1 text-left group ${
+                              hoveredObjectAssetId === obj.assetId && !hoveredObjectInstanceId ? 'bg-white/10 opacity-100' : ''
+                            } ${obj.complete ? '' : 'opacity-80'}`}
+                            onMouseEnter={() => {
+                              if (obj.complete) {
+                                onObjectHover?.(obj, true)
+                              } else {
+                                onWorldHover?.(objectPreview, true)
+                              }
+                            }}
+                            onMouseLeave={() => {
+                              if (obj.complete) {
+                                onObjectHover?.(obj, false)
+                              } else {
+                                onWorldHover?.(objectPreview, false)
+                              }
+                            }}
+                          >
+                            <span className="relative flex h-7 w-7 flex-shrink-0">
+                              <ChromeThumbnail thumbnailUrl={obj.thumbnailUrl ?? obj.referenceImageUrl} alt={obj.name} />
+                              {obj.complete && <FileExtensionBadge extension=".obj" />}
                             </span>
-                          </span>
-                          {obj.index !== undefined && obj.index > 0 && obj.variantLabel && (
-                            <span className="flex-shrink-0 rounded border border-white/10 bg-white/5 px-1.5 py-0.5 text-[10px] leading-none text-white/50">
-                              {obj.variantLabel}
+                            <span className="min-w-0 flex-1">
+                              <span className="block text-white/80 text-xs font-medium leading-tight truncate">
+                                {obj.name}
+                              </span>
                             </span>
-                          )}
-                          {canOpenLocalFolders && (
-                            <AppButton
-                              onClick={() => openAssetFolder(slug, 'object-asset', obj.baseObjectId)}
-                              className="h-7 w-7 flex-shrink-0 justify-center p-1 text-white opacity-0 transition-opacity group-hover:opacity-90 focus-visible:opacity-100 hover:opacity-100"
-                              aria-label={`Open asset folder for ${obj.name}`}
-                              title={`Open asset folder for ${obj.name}`}
-                            >
-                              <FolderOpenIcon size={14} weight="regular" />
-                            </AppButton>
-                          )}
-                        </div>
-                      ))}
+                            {objectLoading ? (
+                              <LoadingSpinner />
+                            ) : obj.index !== undefined && obj.index > 0 && obj.variantLabel && (
+                              <span className="flex-shrink-0 rounded border border-white/10 bg-white/5 px-1.5 py-0.5 text-[10px] leading-none text-white/50">
+                                {obj.variantLabel}
+                              </span>
+                            )}
+                            {canOpenLocalFolders && (
+                              <AppButton
+                                onClick={() => openAssetFolder(slug, 'object-asset', obj.baseObjectId)}
+                                className="h-7 w-7 flex-shrink-0 justify-center p-1 text-white opacity-0 transition-opacity group-hover:opacity-90 focus-visible:opacity-100 hover:opacity-100"
+                                aria-label={`Open asset folder for ${obj.name}`}
+                                title={`Open asset folder for ${obj.name}`}
+                              >
+                                <FolderOpenIcon size={14} weight="regular" />
+                              </AppButton>
+                            )}
+                          </div>
+                        )
+                      })}
                     </div>
                   </div>
                 </div>
@@ -321,4 +352,15 @@ function FileExtensionBadge({ extension }: { extension: string }) {
       {extension}
     </span>
   )
+}
+
+function LoadingSpinner() {
+  return (
+    <span className="pointer-events-none h-3 w-3 flex-shrink-0 rounded-full border border-white/25 border-t-white/90 animate-spin" />
+  )
+}
+
+function isLoadingStatus(status?: string) {
+  if (!status) return true
+  return ['queued', 'submitted', 'running', 'processing', 'in_progress'].includes(status.toLowerCase())
 }

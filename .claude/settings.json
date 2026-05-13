@@ -11,6 +11,7 @@
       "Skill(image-blast-wildcard)",
       "Bash(ls:*)",
       "Bash(node .claude/scripts/**:*)",
+      "Bash(node .claude/scripts/project/show-url.mjs:*)",
       "Bash(bun install:*)",
       "Bash(bun run dev:*)",
       "Bash(lsof:*)",

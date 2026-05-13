@@ -1,0 +1,20 @@
+export const CHARACTER_HEIGHT = 1.6
+export const CAMERA_EYE_OFFSET = CHARACTER_HEIGHT / 2
+
+export const CHARACTER_SPAWN = { x: 0, y: CHARACTER_HEIGHT, z: -0.5 }
+export const CHARACTER_SPAWN_POSITION: [number, number, number] = [
+  CHARACTER_SPAWN.x,
+  CHARACTER_SPAWN.y,
+  CHARACTER_SPAWN.z,
+]
+
+export const CHARACTER_BODY_SPAWN = {
+  x: CHARACTER_SPAWN.x,
+  y: CHARACTER_SPAWN.y - CAMERA_EYE_OFFSET,
+  z: CHARACTER_SPAWN.z,
+}
+export const CHARACTER_BODY_SPAWN_POSITION: [number, number, number] = [
+  CHARACTER_BODY_SPAWN.x,
+  CHARACTER_BODY_SPAWN.y,
+  CHARACTER_BODY_SPAWN.z,
+]

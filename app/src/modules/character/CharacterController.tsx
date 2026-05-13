@@ -5,6 +5,12 @@ import * as THREE from 'three'
 import { useCameraGestures } from '../camera/useCameraGestures'
 import { useDebugStore } from '../../store/debug'
 import { isEditableTarget } from '../../utils/dom'
+import {
+  CAMERA_EYE_OFFSET,
+  CHARACTER_BODY_SPAWN,
+  CHARACTER_BODY_SPAWN_POSITION,
+  CHARACTER_HEIGHT,
+} from './spawn'
 
 export interface CharacterControllerHandle {
   reset: () => void
@@ -14,13 +20,9 @@ const SPEED = 4
 const JUMP_VELOCITY = 3
 const MOUSE_SMOOTHING = 0.12
 const DOLLY_UNITS_PER_PIXEL = 0.01
-const CHARACTER_HEIGHT = 1.6
 const CHARACTER_RADIUS = 0.25
 const CHARACTER_HALF_SEGMENT = CHARACTER_HEIGHT / 2 - CHARACTER_RADIUS
-const CAMERA_EYE_OFFSET = CHARACTER_HEIGHT / 2
 const GROUND_CHECK_DISTANCE = CAMERA_EYE_OFFSET + 0.08
-const CHARACTER_SPAWN = { x: 0, y: CAMERA_EYE_OFFSET, z: -0.5 }
-const CHARACTER_SPAWN_POSITION: [number, number, number] = [CHARACTER_SPAWN.x, CHARACTER_SPAWN.y, CHARACTER_SPAWN.z]
 const DEFAULT_YAW = 0
 
 const _forward = new THREE.Vector3()
@@ -49,7 +51,7 @@ export const CharacterController = forwardRef<CharacterControllerHandle>(
   useImperativeHandle(ref, () => ({
     reset: () => {
       if (!bodyRef.current) return
-      bodyRef.current.setTranslation(CHARACTER_SPAWN, true)
+      bodyRef.current.setTranslation(CHARACTER_BODY_SPAWN, true)
       bodyRef.current.setLinvel({ x: 0, y: 0, z: 0 }, true)
       bodyRef.current.setAngvel({ x: 0, y: 0, z: 0 }, true)
       rawYaw.current = DEFAULT_YAW
@@ -213,7 +215,7 @@ export const CharacterController = forwardRef<CharacterControllerHandle>(
   return (
     <RigidBody
       ref={bodyRef}
-      position={CHARACTER_SPAWN_POSITION}
+      position={CHARACTER_BODY_SPAWN_POSITION}
       enabledRotations={[false, false, false]}
       linearDamping={0}
     >
