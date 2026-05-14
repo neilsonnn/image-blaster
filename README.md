@@ -1,20 +1,10 @@
-```text
-          .-""""-.
-        .'  o  o '.
-       /     ^     \
-      |   .------. |
-      |  /|      |\ |
-      |   | .jpg |  |  
-      |   |      |  |
-       \  '------' /
-        '.       .'
-          '-....-'
-```
+<img width="960" height="540" alt="image-blaster-1" src="https://github.com/user-attachments/assets/d294e420-eb48-4f00-b6a8-13005442d1a8" />
 
 ## `image-blaster`
 Creates 3D environments, SFX, and meshes from a single image using Claude skills, World Labs, and FAL. 
 
 Can take you from an image to a fully meshed 3D environment in < 5 minutes, great for jumpstarting 3D work. Go full blast.
+
 
 ## Quickstart
 
