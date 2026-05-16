@@ -47,6 +47,10 @@ IMAGE-BLASTER uses a few generation models:
 - `--generate-type Normal|LowPoly|Geometry`: `Normal` creates a textured model, `LowPoly` applies polygon reduction, and `Geometry` creates a white geometry-only model. Defaults to `Normal`.
 - `--polygon-type triangle|quadrilateral`: polygon type for `LowPoly`. Defaults to `triangle`.
 
+### Additional Formats
+
+USDZ (Apple AR / Vision Pro) and STL (3D printing) are available via the image-blast-export skill. FBX is opt-in behind `--via blender` when a local `blender` binary is on PATH.
+
 ### Examples
 
 - Video game level concepts? `IMAGE-BLAST` it.
