@@ -1,7 +1,7 @@
 ---
 name: image-blast-3d
 description: Generate one specified atomic 3D object. Use when the user names exactly one object instance to make, or provides one image plus the object name/description.
-argument-hint: [world-name] [object-id/name or image path + object description] [--image-edit-prompt prompt] [--provider meshy|hunyuan] [--regenerate] [--regenerate-reference] [--target-polycount N] [--face-count N] [--generate-type Normal|LowPoly|Geometry] [--polygon-type triangle|quadrilateral] [--enable-pbr true|false]
+argument-hint: [world-name] [object-id/name or image path + object description] [--image-edit-prompt prompt] [--provider meshy|hunyuan|tripo] [--regenerate] [--regenerate-reference] [--target-polycount N] [--face-count N] [--generate-type Normal|LowPoly|Geometry] [--polygon-type triangle|quadrilateral] [--enable-pbr true|false]
 allowed-tools: Read Write Glob Bash(ls *) Bash(node .claude/scripts/project/project-state.mjs *) Bash(node .claude/scripts/project/ensure-local-assets.mjs *) Bash(node .claude/scripts/asset-pipeline/generate-single-asset.mjs *)
 context: fork
 agent: image-blast-3d
@@ -90,6 +90,30 @@ For Meshy-specific requests, pass the matching options:
 - `--should-texture true|false`
 - `--enable-animation true|false`
 - `--enable-rigging true|false`
+
+Pass `--provider tripo` for the Tripo3D engine. Tripo defaults are:
+
+```json
+{
+  "texture": "standard",
+  "pbr": true,
+  "face_limit": 30000,
+  "quad": false,
+  "auto_size": true,
+  "texture_alignment": "original_image",
+  "orientation": "default"
+}
+```
+
+For Tripo-specific requests, pass the matching options:
+
+- `--texture no|standard|HD` (default `standard`)
+- `--pbr true|false` (default `true`)
+- `--face-limit <integer>` (default `30000`)
+- `--quad true|false` (default `false`)
+- `--auto-size true|false` (default `true`)
+- `--texture-alignment original_image|geometry`
+- `--orientation default|align_image`
 
 For explicit model regeneration from the existing reference, append `--regenerate`. For a new source extraction and model, append `--regenerate-reference`. For direct single-image generation, use:
 
