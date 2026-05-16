@@ -10,5 +10,9 @@
     "preview": "bun --cwd=app run preview",
     "test": "bun --cwd=app run test",
     "typecheck": "bun --cwd=app run typecheck"
+  },
+  "devDependencies": {
+    "three": "^0.180.0",
+    "three-stdlib": "^2.36.1"
   }
 }
