@@ -38,6 +38,7 @@ IMAGE-BLASTER uses a few generation models:
 - `nano-banana` - default image edit preference for source cleanup, clean plates, and object reference images.
 - `gpt-image-2` - alternate image edit provider when the edit skill is asked to prefer it.
 - `hunyuan-3d` - Hunyuan 3D model creates 3D object models through FAL.
+- `tripo3d-v2.5` - Tripo3D image-to-3D model creates an alternate 3D object provider through FAL.
 - `elevenlabs-sfx` - ElevenLabs sound effects model creates ambient and object-specific sounds.
 
 3D model creation supports these Hunyuan parameters:
