@@ -12,6 +12,10 @@ const OBJECT_AUTO_ROTATE_Y_SPEED = 0.35
 
 const COLLIDER_WIREFRAME_COLOR = 0x00aaff
 
+const IMPACT_THROTTLE_MS = 200
+const IMPACT_FORCE_THRESHOLD = 8
+const IMPACT_FORCE_FULL_VOLUME = 80
+
 type PointerHandler = (event: ThreeEvent<PointerEvent>) => boolean
 type HoverHandler = (event: ThreeEvent<PointerEvent>, objectId: string, hovering: boolean) => void
 type ClickHandler = (worldPos: THREE.Vector3) => void
@@ -100,6 +104,7 @@ export const SceneObject = forwardRef<SceneObjectHandle, Props>(function SceneOb
   const colliderProxyRef = useRef<THREE.Mesh>(null)
   const sfxRefs = useRef<Array<THREE.PositionalAudio | null>>([])
   const lastSfxIndexRef = useRef<number | null>(null)
+  const lastImpactTimeRef = useRef(0)
   const muted = useAudioStore((s) => s.muted)
   const isStatic = physics === 'static' || physics === 'ghost'
   const usesBoxCollider = physics === 'rigidbody' || physics === 'static'
@@ -160,7 +165,7 @@ export const SceneObject = forwardRef<SceneObjectHandle, Props>(function SceneOb
     })
   }, [muted])
 
-  const playRandomSfx = useCallback(() => {
+  const playRandomSfx = useCallback((volume = 1) => {
     if (muted || object.sfxUrls.length === 0) return
 
     const lastIndex = lastSfxIndexRef.current
@@ -174,7 +179,7 @@ export const SceneObject = forwardRef<SceneObjectHandle, Props>(function SceneOb
     if (!sound) return
 
     lastSfxIndexRef.current = nextIndex
-    sound.setVolume(1)
+    sound.setVolume(Math.min(1, Math.max(0.15, volume)))
     if (sound.isPlaying) sound.stop()
 
     const play = () => sound.play()
@@ -184,6 +189,15 @@ export const SceneObject = forwardRef<SceneObjectHandle, Props>(function SceneOb
     }
     play()
   }, [muted, object.sfxUrls.length])
+
+  const handleContactForce = useCallback((payload: { totalForceMagnitude: number }) => {
+    const now = performance.now()
+    if (now - lastImpactTimeRef.current < IMPACT_THROTTLE_MS) return
+    const force = payload.totalForceMagnitude
+    if (force < IMPACT_FORCE_THRESHOLD) return
+    lastImpactTimeRef.current = now
+    playRandomSfx(force / IMPACT_FORCE_FULL_VOLUME)
+  }, [playRandomSfx])
 
   useEffect(() => {
     const body = rigidBodyRef.current
@@ -254,6 +268,7 @@ export const SceneObject = forwardRef<SceneObjectHandle, Props>(function SceneOb
       additionalSolverIterations={4}
       ccd
       canSleep
+      onContactForce={isStatic ? undefined : handleContactForce}
     >
       {usesBoxCollider && (
         <CuboidCollider
