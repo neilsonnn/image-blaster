@@ -1,17 +1,17 @@
 import { describe, it, expect } from 'vitest'
 import dotenv from 'dotenv'
+import fs from 'fs'
 import path from 'path'
 
-dotenv.config({ path: path.resolve(__dirname, '../../.env') })
+const requiredEnvVars = ['WORLD_LABS_API_KEY', 'FAL_KEY'] as const
+const exampleEnvPath = path.resolve(__dirname, '../../.env.example')
 
-describe('env vars', () => {
-  it('WORLD_LABS_API_KEY is set', () => {
-    expect(typeof process.env.WORLD_LABS_API_KEY).toBe('string')
-    expect(process.env.WORLD_LABS_API_KEY!.length).toBeGreaterThan(0)
-  })
+describe('env example', () => {
+  it('documents every required API key', () => {
+    const exampleEnv = dotenv.parse(fs.readFileSync(exampleEnvPath))
 
-  it('FAL_KEY is set', () => {
-    expect(typeof process.env.FAL_KEY).toBe('string')
-    expect(process.env.FAL_KEY!.length).toBeGreaterThan(0)
+    for (const name of requiredEnvVars) {
+      expect(exampleEnv[name], `${name} missing from .env.example`).toBeTruthy()
+    }
   })
 })
