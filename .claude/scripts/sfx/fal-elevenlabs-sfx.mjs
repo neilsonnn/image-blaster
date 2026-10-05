@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { pathToFileURL } from "node:url";
 import { execFile } from "node:child_process";
 import { rename, stat, unlink } from "node:fs/promises";
 import {
@@ -27,6 +28,8 @@ const DEFAULT_OUTPUT_FORMAT = "mp3_44100_128";
 const SILENCE_THRESHOLD_DB = "-45dB";
 const START_SILENCE_SECONDS = "0.03";
 const END_SILENCE_SECONDS = "0.05";
+const MIN_POSTPROCESSED_SECONDS = 0.05;
+const LOCKED_FILE_CODES = new Set(["EPERM", "EBUSY", "EACCES"]);
 
 function asBool(value, fallback = false) {
   if (value === undefined) return fallback;
@@ -240,6 +243,19 @@ function scoreAudio(analysis) {
   return Math.max(0, Math.round(score));
 }
 
+// Windows briefly locks freshly written files (dev-server watchers, antivirus), so retry the swap.
+async function replaceFile(fromPath, toPath, attempts = 6) {
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      await rename(fromPath, toPath);
+      return;
+    } catch (error) {
+      if (!LOCKED_FILE_CODES.has(error.code) || attempt >= attempts) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 200 * attempt));
+    }
+  }
+}
+
 export async function analyzeAndPostprocessAudio(filePath, options = {}) {
   const extension = options.extension ?? ".mp3";
   const postprocess = options.postprocess !== false;
@@ -263,7 +279,20 @@ export async function analyzeAndPostprocessAudio(filePath, options = {}) {
 
   try {
     await runCommand("ffmpeg", ["-y", "-hide_banner", "-nostdin", "-i", filePath, "-af", filters, tempPath]);
-    await rename(tempPath, filePath);
+    // A near-silent take can be trimmed to nothing; keep the raw audio instead of writing an empty file.
+    const trimmedSeconds = await probeDuration(tempPath).catch(() => undefined);
+    if (!(trimmedSeconds >= MIN_POSTPROCESSED_SECONDS)) {
+      await unlink(tempPath).catch(() => {});
+      return {
+        postprocessed: false,
+        skipped_reason: `Silence trim left ${roundSeconds(trimmedSeconds ?? 0)}s of audio; kept raw file`,
+        filters,
+        before,
+        after: before,
+        quality_score: scoreAudio({ before, after: before })
+      };
+    }
+    await replaceFile(tempPath, filePath);
   } catch (error) {
     await unlink(tempPath).catch(() => {});
     throw error;
@@ -456,7 +485,7 @@ async function main() {
   console.log(JSON.stringify(result, null, 2));
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   main().catch((error) => {
     console.error(error.message);
     process.exit(1);
