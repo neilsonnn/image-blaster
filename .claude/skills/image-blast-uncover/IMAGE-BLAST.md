@@ -16,9 +16,9 @@ Per-image JSON and root `image.json` use the same flat schema. Do not write an `
 - Keep descriptions useful for generation prompts: subject, arrangement, material, color, shape, lighting, camera/view, and environmental effects.
 - If something is uncertain, do not make assumptions about it; describe only what is certain.
 - Deduplicate repeated objects. If many similar jars, rocks, chairs, or tools appear, represent them as one unique object with a `count_estimate`.
-- For objects, include only single rigid or mostly rigid items that can be cleanly segmented as standalone assets.
+- For objects, include only single items that can be cleanly segmented as standalone assets. Rigid items are the default; deformable items (towels, clothing, cables, sponges) and articulated items (drawers, cabinet doors, fridges, ovens, laptops) are valid candidates when tagged with the matching `sim.sim_class` (see Sim Block).
 - Never group multiple different items into one object candidate, and never create compound assets such as "desk with items", "table setup", "shelf contents", "chair and pillow", or "tool pile". Split visible separable items into separate candidates. Err on letting the user decide which objects to include if you are unsure.
-- Avoid sky, fog, terrain, walls, floors, ceilings, whole buildings, and broad environment surfaces unless they are clearly standalone props that make sense as a rigidbody or static scene object.
+- Avoid sky, fog, terrain, walls, floors, ceilings, whole buildings, and broad environment surfaces unless they are clearly standalone props that make sense as a rigidbody or static scene object. Exception: built-in articulated fixtures a robot can operate (cabinet doors, drawers, appliance doors) are candidates with `sim.built_in: true`; one candidate per fixture unit, and its doors/drawers are separate candidates with a `part_of` relation.
 - Preserve stable object IDs if updating existing object directories.
 
 ## Shared JSON Shape
@@ -52,7 +52,15 @@ Use this exact flat shape for both `worlds/<slug>/source/<image-name>.json` and 
           "location_in_image": "inside glass cases along the back wall",
         }
       ],
-      "generate_as_3d_object": true
+      "generate_as_3d_object": true,
+      "sim": {
+        "sim_class": "rigid",
+        "material_class": "terracotta",
+        "mass_kind": "container",
+        "size_m": [0.35, 0.35, 0.7],
+        "size_confidence": "low",
+        "relations": [{ "type": "in", "target": "glass-display-case" }]
+      }
     }
   ]
 }
@@ -70,6 +78,20 @@ Use this exact flat shape for both `worlds/<slug>/source/<image-name>.json` and 
 - `atmosphere`: visible fog, dust, haze, smoke, glow, weather, particles, or explicitly state none visible.
 - `ambient_sound`: concise positive description of audible ambience based on visible regular or sustained sound sources only. Describe only what should be present; do not include exclusions, negative prompts, or loop wording.
 - `objects`: persisted descriptive object candidates. These are fallback/debug data, not generation state.
+- `objects[].sim`: physical classification for the sim layer (`sim/`). Required for every object; see Sim Block.
+
+## Sim Block
+
+Every object carries a `sim` block validated by `sim/blastsim/schemas/objects.py` (`ObjectSim`). It classifies physical behavior; it never holds raw physics numbers. Physics values come from prior tables keyed by the names you pick.
+
+- `sim_class`: one of `rigid`, `static`, `articulated`, `deformable.cloth`, `deformable.cable`, `deformable.volumetric`, `deformable.plastic`. Choose by how the item behaves when a robot grasps, pushes, or pulls it, not by what it looks like.
+- `material_class`: dominant contact material, exactly one key from `sim/blastsim/priors/materials.yaml` (list them with `uv run --project sim blastsim priors materials`).
+- `mass_kind` (rigid/static only): `solid` (block, fruit, book), `shell` (thin-walled closed: bottle, box), or `container` (open thin-walled: mug, bowl, bin). This changes mass by an order of magnitude; when unsure prefer `shell`/`container` for vessels.
+- `size_m`: estimated bounding box `[width, depth, height]` in meters from visible scale cues (doors ~2.0 m tall, counters ~0.9 m, chair seats ~0.45 m, mugs ~0.1 m). Set `size_confidence` to `low`, `medium`, or `high`.
+- `deformable_preset` (deformables only): one key from `sim/blastsim/priors/deformables.yaml` for the matching kind (`blastsim priors presets`).
+- `articulation_template` (articulated only): `cabinet`, `drawer`, `hinged-door`, `fridge`, `oven`, `dishwasher`, `microwave`, `laptop`, `box-lid`, or `other` with the mechanism described in `description`.
+- `built_in`: `true` when the item is part of the room (built-in cabinetry, appliance doors). Built-in items must be removed from the clean plate because the sim replaces them with a template.
+- `relations`: visible support/containment only: `on`, `in`, `attached_to`, `draped_over`, `part_of`, `near`. `target` is another object id or a support name such as `floor`, `counter`, `table`, `shelf`, `wall`.
 
 ## Merge Rules
 

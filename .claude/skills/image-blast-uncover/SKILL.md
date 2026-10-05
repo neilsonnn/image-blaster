@@ -2,7 +2,7 @@
 name: image-blast-uncover
 description: Main image analysis skill, object generation, plate decisionmaking, and initial scene description. Use this skill when user wants to create objects and necessary for main image analysis.  
 argument-hint: [world-name] [optional image paths or instructions]
-allowed-tools: Read Write Glob Bash(ls *) Bash(node .claude/scripts/project/project-state.mjs *)
+allowed-tools: Read Write Glob Bash(ls *) Bash(node .claude/scripts/project/project-state.mjs *) Bash(uv run --project sim blastsim *)
 ---
 
 Uncover literal image information for project `$0`. Additional image paths or instructions may appear in `$ARGUMENTS`.
@@ -25,7 +25,8 @@ If no source images exist after staging and the user needs to add images, report
 5. Analyze one source image at a time:
    - Read the image directly using agent image understanding.
    - Use literal, observational language only.
-   - Extract object candidates as single cleanly segmentable items only. A good separability test is whether a human could lift the item or move it by pushing it.
+   - Extract object candidates as single cleanly segmentable items only. A good separability test is whether a human could lift the item, move it by pushing it, or operate it (open a drawer or door).
+   - Tag every candidate with a `sim` block following the Sim Block section of `IMAGE-BLAST.md`; pick `material_class` and `deformable_preset` only from the names printed by `uv run --project sim blastsim priors materials` and `uv run --project sim blastsim priors presets`.
    - Do not extract scene-surface elements or built-in parts of the environment, such as rugs, flooring, walls, or fixed architectural features.
    - Never group different items or create compound assets, such as a combination of table with chairs, or table including the objects on top.
    - Write a sibling JSON file at `worlds/$0/source/<image-name>.json`.
@@ -65,6 +66,14 @@ worlds/$0/output/<object-slug>/object.json
     "source_images": [],
     "evidence": [],
     "generate_as_3d_object": true,
+    "sim": {
+      "sim_class": "rigid",
+      "material_class": "<materials.yaml key>",
+      "mass_kind": "solid",
+      "size_m": [0.0, 0.0, 0.0],
+      "size_confidence": "low",
+      "relations": []
+    },
     "working_dir": "worlds/$0/output/<object-slug>"
   },
   "updated_at": "..."
@@ -76,12 +85,16 @@ Object files store durable identity, intent, and provenance only. Do not write g
 11. After object files are written, handle the clean plate decision:
    - In one-shot mode, continue with `Agent(image-blast-plate)` and wait for it before world generation.
    - Otherwise ask whether to remove confirmed objects any anything else the user wants to remove from the source image to create a clean plate to generate a world from.
+   - Built-in articulated objects (`sim.built_in: true`) are always on the removal list, since the sim replaces them with templates.
 
 12. Refresh derived project state:
 
 ```bash
 node .claude/scripts/project/project-state.mjs --world "$0"
+uv run --project sim blastsim state --world "$0"
 ```
+
+   Fix any object whose `sim_error` is not null before reporting.
 
 13. Report saved paths, source image count, per-image JSON count, created/updated object directory count, and the clean plate decision.
 

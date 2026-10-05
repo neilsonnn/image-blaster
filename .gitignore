@@ -17,3 +17,10 @@ app/.vite/
 
 # OS
 .DS_Store
+
+# Sim package (uv)
+sim/.venv/
+sim/.cache/
+__pycache__/
+.pytest_cache/
+MUJOCO_LOG.TXT

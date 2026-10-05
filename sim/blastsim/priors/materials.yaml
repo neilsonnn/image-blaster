@@ -1,0 +1,36 @@
+# Rigid/contact material priors. Every number is [value, low, high] and is a PRIOR, not a measurement:
+# handbook-ish ballparks with wide ranges for domain randomization. Replace with sysid data as it arrives.
+# friction = Coulomb coefficient against a generic dry surface; pair overrides below win.
+# contact: stiff | medium | soft -> MuJoCo solref/solimp preset in compile/mjcf.py.
+# shell_thickness_m: wall thickness for mass_kind shell/container (mugs, bottles, boxes).
+
+materials:
+  ceramic:        {density_kg_m3: [2300, 2000, 2600], friction: [0.50, 0.35, 0.70], restitution: [0.30, 0.10, 0.50], shell_thickness_m: [0.005, 0.003, 0.008], contact: stiff}
+  glass:          {density_kg_m3: [2500, 2400, 2600], friction: [0.40, 0.25, 0.60], restitution: [0.40, 0.20, 0.60], shell_thickness_m: [0.003, 0.002, 0.005], contact: stiff}
+  terracotta:     {density_kg_m3: [1900, 1700, 2100], friction: [0.55, 0.40, 0.75], restitution: [0.25, 0.10, 0.40], shell_thickness_m: [0.008, 0.005, 0.012], contact: stiff}
+  stone:          {density_kg_m3: [2600, 2300, 2900], friction: [0.55, 0.40, 0.75], restitution: [0.30, 0.10, 0.50], shell_thickness_m: [0.010, 0.005, 0.020], contact: stiff}
+  metal_steel:    {density_kg_m3: [7850, 7700, 8000], friction: [0.40, 0.25, 0.60], restitution: [0.50, 0.30, 0.70], shell_thickness_m: [0.001, 0.0005, 0.002], contact: stiff}
+  metal_aluminum: {density_kg_m3: [2700, 2650, 2800], friction: [0.40, 0.25, 0.60], restitution: [0.45, 0.25, 0.65], shell_thickness_m: [0.0015, 0.0008, 0.003], contact: stiff}
+  wood:           {density_kg_m3: [650, 400, 900],    friction: [0.45, 0.30, 0.60], restitution: [0.35, 0.15, 0.50], shell_thickness_m: [0.008, 0.004, 0.015], contact: stiff}
+  plastic_hard:   {density_kg_m3: [1050, 900, 1250],  friction: [0.35, 0.20, 0.50], restitution: [0.40, 0.20, 0.60], shell_thickness_m: [0.002, 0.001, 0.004], contact: medium}
+  rubber:         {density_kg_m3: [1150, 950, 1300],  friction: [0.90, 0.70, 1.20], restitution: [0.70, 0.50, 0.85], shell_thickness_m: [0.003, 0.001, 0.006], contact: soft}
+  cardboard:      {density_kg_m3: [150, 100, 250],    friction: [0.50, 0.35, 0.65], restitution: [0.15, 0.05, 0.30], shell_thickness_m: [0.004, 0.002, 0.006], contact: medium}
+  paper:          {density_kg_m3: [800, 700, 1200],   friction: [0.45, 0.30, 0.60], restitution: [0.10, 0.02, 0.20], shell_thickness_m: [0.0005, 0.0002, 0.001], contact: medium}
+  leather:        {density_kg_m3: [900, 800, 1000],   friction: [0.60, 0.40, 0.80], restitution: [0.20, 0.05, 0.35], shell_thickness_m: [0.002, 0.001, 0.004], contact: medium}
+  fruit_produce:  {density_kg_m3: [950, 850, 1050],   friction: [0.50, 0.30, 0.70], restitution: [0.20, 0.05, 0.35], contact: soft}
+  fabric_cotton:  {density_kg_m3: [400, 200, 600],    friction: [0.60, 0.40, 0.80], restitution: [0.05, 0.00, 0.15], shell_thickness_m: [0.002, 0.001, 0.004], contact: soft}
+  foam:           {density_kg_m3: [40, 20, 80],       friction: [0.80, 0.60, 1.00], restitution: [0.10, 0.02, 0.25], contact: soft}
+  gripper_pad:    {density_kg_m3: [1100, 950, 1300],  friction: [1.00, 0.70, 1.30], restitution: [0.30, 0.10, 0.50], contact: soft}
+  generic_floor:  {density_kg_m3: [2000, 1000, 2500], friction: [0.60, 0.40, 0.80], restitution: [0.20, 0.05, 0.40], contact: stiff}
+  generic_wall:   {density_kg_m3: [1500, 1000, 2500], friction: [0.50, 0.30, 0.70], restitution: [0.20, 0.05, 0.40], contact: stiff}
+
+# Symmetric pair overrides: [a, b, value, low, high]. Gripper pad pairs drive grasp success; sysid these first.
+friction_pairs:
+  - [gripper_pad, ceramic,       0.80, 0.60, 1.00]
+  - [gripper_pad, glass,         0.60, 0.40, 0.90]
+  - [gripper_pad, plastic_hard,  0.70, 0.50, 0.90]
+  - [gripper_pad, metal_steel,   0.70, 0.50, 0.90]
+  - [gripper_pad, wood,          0.80, 0.60, 1.00]
+  - [gripper_pad, cardboard,     0.80, 0.60, 1.00]
+  - [gripper_pad, fabric_cotton, 0.90, 0.70, 1.20]
+  - [gripper_pad, fruit_produce, 0.80, 0.50, 1.00]

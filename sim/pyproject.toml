@@ -1,0 +1,32 @@
+[project]
+name = "blastsim"
+version = "0.1.0"
+description = "IMAGE-BLASTER sim layer: worlds -> physically valid MuJoCo cousin environments for the R1 Lite"
+requires-python = ">=3.11,<3.14"
+dependencies = [
+  "coacd>=1.0.14",
+  "fast-simplification>=0.2.0",
+  "mujoco>=3.14.0",
+  "networkx>=3.6.1",
+  "numpy>=1.26",
+  "pydantic>=2.6",
+  "pyyaml>=6.0",
+  "scipy>=1.17.1",
+  "trimesh>=5.1.1",
+]
+
+[project.scripts]
+blastsim = "blastsim.cli:main"
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["blastsim"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -91,6 +91,16 @@ When doing an IMAGE-BLAST, it can be done in one-shot by following this order:
 
 Normally it is better to do checkins with the user at the end of each step, but if the user is enthusiastic about a full IMAGE-BLAST, you can do it in one-shot in this order.
 
+## Sim Layer (robot environments)
+
+`sim/` is a Python package (`blastsim`, run with `uv run --project sim blastsim ...`) that turns worlds into MuJoCo environments for the Galaxea R1 Lite. Every physical value is a ranged prior with a source; robot facts come only from the pinned vendor files in `sim/blastsim/robots/<robot>/spec.json`.
+
+- Uncover tags each object with a `sim` block (class, material, mass kind, size in meters, relations); `blastsim state --world <slug>` checks it.
+- Robot model: `blastsim robot fetch|build|validate` (vendor files are cached in gitignored `sim/.cache/`, never committed).
+- After step 7, run one `Agent(image-blast-sim-object)` per generated rigid/static object, in the background.
+- Object cousins are sibling objects `output/<parent>--<cousin>/` created with `/image-blast-sim-cousins`; they go through the same 3D and sim-object agents.
+- Sim outputs follow the indexed convention in `output/<object>/sim/` (`N-<object>-physics.json`, `-affordances.json`, `-validation.json`, `-collision/`, `-visual/`).
+
 ## Fixing Generations
 
 When the user wants to fix something generated, try to not override the skills by doing the work yourself, but rather identify the appropriate skill, and then use it to fix the generation, it will have the knowledge to fix the generation.

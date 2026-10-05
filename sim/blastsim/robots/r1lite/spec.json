@@ -1,0 +1,121 @@
+{
+  "schema_version": 1,
+  "robot": "r1lite",
+  "variant": "2026_a1x",
+  "vendor": "Galaxea",
+  "verified": false,
+  "source": {
+    "urdf": {
+      "repo": "userguide-galaxea/URDF",
+      "commit": "b81c32520b1d1a3b3299df0c038e042001b46ae3",
+      "path": "R1Lite/urdf_r1lite_2026/urdf_r1lite_2026_a1x.urdf",
+      "license": "none stated (do not commit)"
+    },
+    "meshes": {
+      "repo": "OpenGalaxea/GalaxeaManipSim",
+      "commit": "abe7f5161eeaa150e6eaffdf443af5df7f23f356",
+      "path": "galaxea_sim/assets/r1_lite/meshes",
+      "license": "Apache-2.0"
+    },
+    "srdf": {
+      "repo": "OpenGalaxea/GalaxeaManipSim",
+      "commit": "abe7f5161eeaa150e6eaffdf443af5df7f23f356",
+      "path": "galaxea_sim/assets/r1_lite/robot_mplib.srdf",
+      "license": "Apache-2.0"
+    },
+    "docs": null,
+    "vendor_sim": {
+      "repo": "OpenGalaxea/GalaxeaManipSim",
+      "commit": "abe7f5161eeaa150e6eaffdf443af5df7f23f356",
+      "path": "galaxea_sim/robots/r1_lite.py",
+      "license": "Apache-2.0"
+    }
+  },
+  "base": {
+    "drive": "3x swerve module (steer revolute + wheel continuous), per URDF",
+    "sim_model": "planar_xy_yaw_velocity",
+    "footprint_m": {
+      "x": [
+        -0.238,
+        0.362
+      ],
+      "y": [
+        -0.299,
+        0.297
+      ],
+      "radius": 0.376,
+      "radius_with_arms_ready": 0.871,
+      "source": "computed from pinned URDF + meshes (blastsim robot build)"
+    },
+    "max_lin_vel_m_s": null,
+    "max_ang_vel_rad_s": null
+  },
+  "torso": {
+    "dof": 3
+  },
+  "arms": {
+    "count": 2,
+    "model": "A1X",
+    "dof_per_arm": 6,
+    "reach_m": {
+      "max": 0.886,
+      "p95": 0.819,
+      "measured_from": "arm base to fingertip",
+      "source": "computed from pinned URDF + meshes (blastsim robot build)"
+    },
+    "payload_kg_per_arm": null
+  },
+  "gripper": {
+    "type": "parallel_jaw",
+    "finger_travel_m": 0.05,
+    "stroke_m": 0.1,
+    "max_open_width_m": {
+      "value": 0.099,
+      "source": "computed: fingertip pad inner faces, collision geometry"
+    },
+    "max_force_n": null,
+    "pad_material": "gripper_pad"
+  },
+  "cameras": {
+    "head": {
+      "link": "camera_head_left_link",
+      "frame": "optical",
+      "resolution": [
+        1280,
+        720
+      ],
+      "fovx_deg": 106.09,
+      "fovy_deg": 73.51,
+      "source": "vendor_sim"
+    },
+    "wrist_left": {
+      "link": "left_D405_link",
+      "frame": "optical",
+      "resolution": [
+        320,
+        240
+      ],
+      "fovx_deg": 87.0,
+      "fovy_deg": 58.0,
+      "source": "vendor_sim"
+    },
+    "wrist_right": {
+      "link": "right_D405_link",
+      "frame": "optical",
+      "resolution": [
+        320,
+        240
+      ],
+      "fovx_deg": 87.0,
+      "fovy_deg": 58.0,
+      "source": "vendor_sim"
+    }
+  },
+  "notes": [
+    "dof, finger travel and camera links come from the pinned URDF; stroke = 2 x finger travel.",
+    "camera intrinsics and mounts mirror Galaxea's own sim (vendor_sim), not a calibration of your unit. The URDF also has camera_head_right_link (stereo right), which vendor_sim does not render.",
+    "wrist fovx/fovy (87/58 deg) do not match the 320x240 aspect; MuJoCo uses fovy and derives fovx from resolution.",
+    "footprint_m, reach_m and max_open_width_m are computed from the pinned URDF + meshes by `blastsim robot build`.",
+    "payload, real grip force and base speed limits are not in any URDF: fill from Galaxea docs or measurement."
+  ]
+}

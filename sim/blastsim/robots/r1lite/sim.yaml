@@ -1,0 +1,65 @@
+# MuJoCo modeling choices for the R1 Lite. These are SIM decisions, not vendor facts (those live in spec.json).
+# `source` says where each choice came from; "default" means untuned and a sysid target.
+
+option:
+  timestep: 0.002
+  integrator: discrete       # MuJoCo 3.14 integrates flex elasticity only under `discrete`; robot behavior identical
+  solver: CG                 # ~7x faster than Newton with cloth in the scene; robot checks unchanged
+  cone: elliptic
+  impratio: 10               # stiffer friction cone, fewer slipping grasps
+
+base:
+  body: base_link
+  joints: [base_x, base_y, base_yaw]   # world-frame planar joints; slides come before the hinge in the chain
+  kv: {lin: 3000.0, ang: 300.0}         # source: default (velocity tracking ~20 ms for ~57 kg)
+  ctrlrange: {lin: 1.0, ang: 1.5}       # source: default until Galaxea base speed limits are known
+  passive_joints: [steer_motor_joint1, wheel_motor_joint1, steer_motor_joint2, wheel_motor_joint2, steer_motor_joint3, wheel_motor_joint3]
+  passive_damping: 1.0
+  bodies: [base_link, steer_motor_link1, wheel_motor_link1, steer_motor_link2, wheel_motor_link2, steer_motor_link3, wheel_motor_link3]
+
+position_groups:   # source: vendor_sim (GalaxeaManipSim drive stiffness 1000 / damping 200); force limits from URDF effort
+  torso: {joints: [torso_joint1, torso_joint2, torso_joint3], kp: 1000.0, kv: 200.0}
+  left_arm: {joints: [left_arm_joint1, left_arm_joint2, left_arm_joint3, left_arm_joint4, left_arm_joint5, left_arm_joint6], kp: 1000.0, kv: 200.0}
+  right_arm: {joints: [right_arm_joint1, right_arm_joint2, right_arm_joint3, right_arm_joint4, right_arm_joint5, right_arm_joint6], kp: 1000.0, kv: 200.0}
+
+joint_defaults:   # source: default
+  armature: 0.01
+  damping: 0.1
+
+gravcomp_root: torso_link1   # vendor_sim compensates gravity via passive forces; mirror with body gravcomp on this subtree
+
+grippers:   # finger2 mirrors finger1 through a joint equality (vendor gripper_finger_sign [1, -1])
+  left:
+    driver: left_gripper_finger_joint1
+    follower: left_gripper_finger_joint2
+    pads: [left_gripper_finger_link1, left_gripper_finger_link2]
+  right:
+    driver: right_gripper_finger_joint1
+    follower: right_gripper_finger_joint2
+    pads: [right_gripper_finger_link1, right_gripper_finger_link2]
+decompose_collision:   # L-shaped finger racks: a single convex hull would fill the space between the fingers
+  links: [left_gripper_finger_link1, left_gripper_finger_link2, right_gripper_finger_link1, right_gripper_finger_link2]
+  threshold: 0.05
+  max_hulls: 6
+gripper_actuator: {kp: 1000.0, kv: 200.0}   # source: vendor_sim; force limit from URDF effort
+pad_contact: {condim: 4, torsional: 0.005, rolling: 0.0001, priority: 1}
+
+keyframes:
+  zero: {}   # all joints 0, clamped into limits (vendor init_qpos)
+  ready:     # source: vendor relaxed-IK starting_config (settings_left/right.yaml)
+    left_arm_joint1: 1.5
+    left_arm_joint2: 1.9508485794067383
+    left_arm_joint3: -1.080855369567871
+    left_arm_joint4: 0.4437669813632965
+    left_arm_joint5: -0.17093953490257263
+    left_arm_joint6: -0.19848759472370148
+    right_arm_joint1: -1.5
+    right_arm_joint2: 1.9508485794067383
+    right_arm_joint3: -1.080855369567871
+    right_arm_joint4: -0.4437669813632965
+    right_arm_joint5: 0.17093953490257263
+    right_arm_joint6: 0.19848759472370148
+    left_gripper_finger_joint1: 0.05
+    left_gripper_finger_joint2: -0.05
+    right_gripper_finger_joint1: 0.05
+    right_gripper_finger_joint2: -0.05

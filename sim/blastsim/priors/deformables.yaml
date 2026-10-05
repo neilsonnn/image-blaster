@@ -1,0 +1,25 @@
+# Deformable presets. Uncover picks a preset name; it never invents raw numbers. [value, low, high], all PRIORS.
+# Cloth/volumetric moduli are effective sim moduli (fabric is not a continuum) - expect sysid to move them a lot.
+
+cloth:   # MuJoCo flexcomp dim=2
+  cotton_towel_heavy: {material_class: fabric_cotton, areal_density_kg_m2: [0.50, 0.35, 0.65], young_pa: [5.0e5, 1.0e5, 3.0e6], poisson: [0.30, 0.10, 0.45], thickness_m: [0.003, 0.002, 0.005],   damping: [0.02, 0.005, 0.1]}
+  cotton_tshirt:      {material_class: fabric_cotton, areal_density_kg_m2: [0.16, 0.12, 0.22], young_pa: [2.0e5, 5.0e4, 1.0e6], poisson: [0.30, 0.10, 0.45], thickness_m: [0.0008, 0.0005, 0.0012], damping: [0.02, 0.005, 0.1]}
+  denim:              {material_class: fabric_cotton, areal_density_kg_m2: [0.40, 0.30, 0.50], young_pa: [2.0e6, 5.0e5, 8.0e6], poisson: [0.30, 0.10, 0.45], thickness_m: [0.0012, 0.0008, 0.0018], damping: [0.02, 0.005, 0.1]}
+  silk_light:         {material_class: fabric_cotton, areal_density_kg_m2: [0.06, 0.03, 0.09], young_pa: [1.0e5, 2.0e4, 5.0e5], poisson: [0.30, 0.10, 0.45], thickness_m: [0.0002, 0.0001, 0.0004], damping: [0.01, 0.002, 0.05]}
+  felt:               {material_class: fabric_cotton, areal_density_kg_m2: [0.30, 0.20, 0.45], young_pa: [1.0e5, 3.0e4, 5.0e5], poisson: [0.30, 0.10, 0.45], thickness_m: [0.003, 0.002, 0.005],   damping: [0.03, 0.005, 0.1]}
+  plastic_bag:        {material_class: plastic_hard,  areal_density_kg_m2: [0.02, 0.01, 0.04], young_pa: [2.0e8, 1.0e8, 5.0e8], poisson: [0.40, 0.30, 0.45], thickness_m: [2.0e-5, 1.0e-5, 5.0e-5], damping: [0.01, 0.002, 0.05]}
+
+cable:   # MuJoCo cable plugin
+  cotton_rope:  {material_class: fabric_cotton, radius_m: [0.005, 0.003, 0.010], density_kg_m3: [600, 400, 900],    bend_pa: [1.0e6, 1.0e5, 1.0e7], twist_pa: [1.0e6, 1.0e5, 1.0e7]}
+  usb_cable:    {material_class: rubber,        radius_m: [0.002, 0.0015, 0.003], density_kg_m3: [1500, 1100, 2000], bend_pa: [5.0e7, 1.0e7, 2.0e8], twist_pa: [2.0e7, 5.0e6, 1.0e8]}
+  garden_hose:  {material_class: rubber,        radius_m: [0.008, 0.006, 0.012], density_kg_m3: [1100, 950, 1300],  bend_pa: [2.0e7, 5.0e6, 8.0e7], twist_pa: [1.0e7, 2.0e6, 5.0e7]}
+
+volumetric:   # MuJoCo flexcomp dim=3 (tet FEM)
+  sponge_kitchen: {material_class: foam,          density_kg_m3: [40, 20, 80],      young_pa: [3.0e4, 1.0e4, 1.0e5], poisson: [0.20, 0.05, 0.35], damping: [0.10, 0.02, 0.5]}
+  foam_pillow:    {material_class: fabric_cotton, density_kg_m3: [20, 12, 40],      young_pa: [5.0e3, 2.0e3, 2.0e4], poisson: [0.20, 0.05, 0.35], damping: [0.10, 0.02, 0.5]}
+  plush_toy:      {material_class: fabric_cotton, density_kg_m3: [80, 40, 150],     young_pa: [1.0e4, 3.0e3, 5.0e4], poisson: [0.30, 0.10, 0.45], damping: [0.10, 0.02, 0.5]}
+  rubber_soft:    {material_class: rubber,        density_kg_m3: [1100, 950, 1250], young_pa: [1.0e6, 3.0e5, 5.0e6], poisson: [0.45, 0.40, 0.49], damping: [0.05, 0.01, 0.2]}
+  fruit_soft:     {material_class: fruit_produce, density_kg_m3: [1000, 900, 1100], young_pa: [3.0e5, 1.0e5, 2.0e6], poisson: [0.40, 0.30, 0.49], damping: [0.10, 0.02, 0.5]}
+
+plastic:   # MPM-class; not supported by the MuJoCo backend, kept for later solvers
+  play_dough: {material_class: foam, density_kg_m3: [1300, 1100, 1500], young_pa: [1.0e5, 3.0e4, 5.0e5], poisson: [0.40, 0.30, 0.45], yield_stress_pa: [2.0e3, 5.0e2, 1.0e4]}
