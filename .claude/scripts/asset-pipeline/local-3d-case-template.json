@@ -1,0 +1,160 @@
+{
+  "schema_version": 2,
+  "case_id": "REPLACE-new-unique-case-id",
+  "subject": {
+    "object_id": "REPLACE-object-id",
+    "object_class": "REPLACE-reviewed-object-class",
+    "source": {
+      "path": "REPLACE-reviewed-1k.png",
+      "sha256": "REPLACE-source-sha256"
+    }
+  },
+  "asset": {
+    "path": "REPLACE-new-candidate.glb",
+    "sha256": "REPLACE-asset-sha256"
+  },
+  "case_binding": {
+    "path": "REPLACE-case-binding.json",
+    "sha256": "REPLACE-binding-sha256"
+  },
+  "stages": [
+    {
+      "id": "reference",
+      "requires": [],
+      "status": "pending",
+      "attempts": 0,
+      "max_attempts": 3,
+      "evidence": []
+    },
+    {
+      "id": "weights",
+      "requires": [],
+      "status": "pending",
+      "attempts": 0,
+      "max_attempts": 3,
+      "evidence": []
+    },
+    {
+      "id": "latent",
+      "requires": [
+        "reference",
+        "weights"
+      ],
+      "status": "pending",
+      "attempts": 0,
+      "max_attempts": 3,
+      "evidence": []
+    },
+    {
+      "id": "decode",
+      "requires": [
+        "latent",
+        "weights"
+      ],
+      "status": "pending",
+      "attempts": 0,
+      "max_attempts": 3,
+      "evidence": []
+    },
+    {
+      "id": "extract",
+      "requires": [
+        "decode"
+      ],
+      "status": "pending",
+      "attempts": 0,
+      "max_attempts": 3,
+      "evidence": []
+    },
+    {
+      "id": "candidate",
+      "requires": [
+        "extract"
+      ],
+      "status": "pending",
+      "attempts": 0,
+      "max_attempts": 3,
+      "evidence": []
+    },
+    {
+      "id": "topology",
+      "requires": [
+        "candidate"
+      ],
+      "status": "pending",
+      "attempts": 0,
+      "max_attempts": 3,
+      "evidence": []
+    },
+    {
+      "id": "validator",
+      "requires": [
+        "candidate"
+      ],
+      "status": "pending",
+      "attempts": 0,
+      "max_attempts": 3,
+      "evidence": []
+    },
+    {
+      "id": "budget",
+      "requires": [
+        "candidate"
+      ],
+      "status": "pending",
+      "attempts": 0,
+      "max_attempts": 3,
+      "evidence": []
+    },
+    {
+      "id": "render",
+      "requires": [
+        "candidate"
+      ],
+      "status": "pending",
+      "attempts": 0,
+      "max_attempts": 3,
+      "evidence": []
+    },
+    {
+      "id": "visual",
+      "requires": [
+        "render",
+        "topology",
+        "validator",
+        "budget",
+        "preservation"
+      ],
+      "status": "pending",
+      "attempts": 0,
+      "max_attempts": 3,
+      "evidence": []
+    },
+    {
+      "id": "geometry",
+      "requires": [
+        "visual",
+        "reference"
+      ],
+      "status": "pending",
+      "attempts": 0,
+      "max_attempts": 3,
+      "evidence": []
+    },
+    {
+      "id": "preservation",
+      "requires": [
+        "candidate"
+      ],
+      "status": "pending",
+      "attempts": 0,
+      "max_attempts": 3,
+      "evidence": []
+    }
+  ],
+  "loop_history": [],
+  "holds": [
+    "texturing",
+    "delegation"
+  ]
+}

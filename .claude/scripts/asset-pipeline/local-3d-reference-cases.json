@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "policy": "Another object requires a new schema-v2 evidence graph and object/source/asset-bound visual review; reference acceptance is not transferable",
+  "reference_cases": [
+    {
+      "case_id": "diffuse-white-mug-256-postprocessed",
+      "object_id": "diffuse-white-mug",
+      "object_class": "upright-smooth-ceramic-mug",
+      "source_sha256": "b2412b471921298e184bd02047ca78535db2d476cc2f862892f5c68f55000db8",
+      "asset_sha256": "9f1ef7857b276dbecf201a55e6134b8d32b3a36bf6f1ab465abc4e29be2dad87",
+      "graph": {
+        "path": "D:\\workspace\\data\\repo\\ui-ai-generation\\image-blaster\\.claude\\scripts\\asset-pipeline\\reference-cases\\diffuse-white-mug-256\\qualification-graph.json",
+        "sha256": "c0aa721a0c78085693ca46d493d5c36ee315de5616863ff1947c3e57b0f36cb9"
+      },
+      "asset": {
+        "path": "D:\\workspace\\data\\repo\\ui-ai-generation\\image-blaster\\.claude\\scripts\\asset-pipeline\\reference-cases\\diffuse-white-mug-256\\mug-geometry.glb",
+        "sha256": "9f1ef7857b276dbecf201a55e6134b8d32b3a36bf6f1ab465abc4e29be2dad87"
+      },
+      "scope": "Geometry-only postprocessed approximate smooth ceramic white-mug prop",
+      "holds": [
+        "texturing",
+        "delegation"
+      ],
+      "limitations": [
+        "Residual rim/handle asymmetry remains; not a measured scan or exact source surface",
+        "Explicit wall fairing applied; raw model inference remains visually unqualified",
+        "Generalization to other objects and texture/delegation remain unqualified"
+      ],
+      "evidence_storage": "Asset/source/views retained here; raw fields, checkpoint and latent evidence remain at hash-bound external paths in the graph"
+    }
+  ]
+}

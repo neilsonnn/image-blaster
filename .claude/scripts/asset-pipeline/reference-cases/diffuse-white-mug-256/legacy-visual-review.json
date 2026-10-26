@@ -1,0 +1,27 @@
+{
+  "asset_sha256": "9f1ef7857b276dbecf201a55e6134b8d32b3a36bf6f1ab465abc4e29be2dad87",
+  "decision": "pass",
+  "reviewer": "Codex assistant, actual two-view visual inspection 2026-10-25",
+  "views": [
+    {
+      "path": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-23\\o\\outputs\\mug-paired-decode\\fairing\\fair-180\\clay-review\\front.png",
+      "sha256": "28db1542a9149b2cc58e3e4be8cb9df8960c7c05b1734bf8342f9b780803a285"
+    },
+    {
+      "path": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-23\\o\\outputs\\mug-paired-decode\\fairing\\fair-180\\clay-review\\three-quarter.png",
+      "sha256": "ec9f7cae5848602401667ac69859560f786e46fb21305950726e1cf2e499e485"
+    }
+  ],
+  "criteria": [
+    "Continuous open handle and hollow cup remain",
+    "Broad repeated vertical body paneling is reduced to an acceptable smooth ceramic prop surface",
+    "Rim/base/handle silhouette preserved; minor rim asymmetry disclosed",
+    "Both front and opposite-quarter clay views reviewed at 1024; no textures used to conceal shape"
+  ],
+  "accepted_scope": "Geometry-only postprocessed approximate white-mug prop from this qualified reference",
+  "limitations": [
+    "Residual rim/handle asymmetry remains; not a measured scan or exact source surface",
+    "Explicit wall fairing applied; raw model inference remains visually unqualified",
+    "Generalization to other objects and texture/delegation remain unqualified"
+  ]
+}

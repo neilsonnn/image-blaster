@@ -1,0 +1,307 @@
+{
+  "case_id": "diffuse-white-mug-256-postprocessed",
+  "asset": {
+    "path": "D:\\workspace\\data\\repo\\ui-ai-generation\\image-blaster\\.claude\\scripts\\asset-pipeline\\reference-cases\\diffuse-white-mug-256\\mug-geometry.glb",
+    "sha256": "9f1ef7857b276dbecf201a55e6134b8d32b3a36bf6f1ab465abc4e29be2dad87"
+  },
+  "stages": [
+    {
+      "id": "reference",
+      "requires": [],
+      "status": "pass",
+      "attempts": 1,
+      "max_attempts": 2,
+      "evidence": [
+        {
+          "path": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-23\\o\\outputs\\clear-reference-qualification\\qualification.json",
+          "sha256": "889bff639d3fefad47bc19774dd38b51b003d855b5632a9e9d95de464ae332b7"
+        },
+        {
+          "path": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-23\\o\\outputs\\clear-reference-qualification\\mug-input-reviewed-1k.png",
+          "sha256": "b2412b471921298e184bd02047ca78535db2d476cc2f862892f5c68f55000db8"
+        },
+        {
+          "path": "D:\\workspace\\data\\repo\\ui-ai-generation\\image-blaster\\.claude\\scripts\\asset-pipeline\\reference-cases\\diffuse-white-mug-256\\source-1k.png",
+          "sha256": "b2412b471921298e184bd02047ca78535db2d476cc2f862892f5c68f55000db8"
+        }
+      ]
+    },
+    {
+      "id": "weights",
+      "requires": [],
+      "status": "pass",
+      "attempts": 1,
+      "max_attempts": 2,
+      "evidence": [
+        {
+          "path": "D:\\workspace\\ComfyUI_windows_portable\\ComfyUI\\models\\checkpoints\\hunyuan3d-dit-v2-0.fp16.safetensors",
+          "sha256": "360bc281fc956d4acac0c3d36d5ec0ebf8cdddbf4b8892e894d12419388d479b"
+        }
+      ]
+    },
+    {
+      "id": "latent",
+      "requires": [
+        "reference",
+        "weights"
+      ],
+      "status": "pass",
+      "attempts": 1,
+      "max_attempts": 2,
+      "evidence": [
+        {
+          "path": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-23\\o\\outputs\\mug-denoising-parity\\native-trace.pt",
+          "sha256": "40d8d5d0a6456d06268b82d3f7b8834c8b1c71955748f6b5d469092a4b920324"
+        },
+        {
+          "path": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-23\\o\\outputs\\mug-denoising-parity\\reference-trajectories.pt",
+          "sha256": "df7c03a594bff7ac464d1f5884e18292f16e0bf8e8cf7dd1c1b588085709db43"
+        }
+      ]
+    },
+    {
+      "id": "decode",
+      "requires": [
+        "latent",
+        "weights"
+      ],
+      "status": "pass",
+      "attempts": 1,
+      "max_attempts": 2,
+      "evidence": [
+        {
+          "path": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-23\\o\\outputs\\mug-paired-decode\\decode-receipt.json",
+          "sha256": "a3025167eb621c7962aa961de1e415ad43970b7c4bdc4bea9f99df2173d355d0"
+        },
+        {
+          "path": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-23\\o\\outputs\\mug-paired-decode\\native\\field-256.npz",
+          "sha256": "e817c74fdc451c08c0c4754ff7a32e735922c5afd2b2096c86120d1502ea9b52"
+        },
+        {
+          "path": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-23\\o\\outputs\\mug-paired-decode\\upstream\\field-256.npz",
+          "sha256": "fbf13818bb30bccfed0070115d83b35417ddd97853bf9136b01c2e5bdc51cc45"
+        }
+      ]
+    },
+    {
+      "id": "extract",
+      "requires": [
+        "decode"
+      ],
+      "status": "pass",
+      "attempts": 1,
+      "max_attempts": 2,
+      "evidence": [
+        {
+          "path": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-23\\o\\outputs\\mug-paired-decode\\native\\raw.glb",
+          "sha256": "f550c9fff9a21fc899c7693c0edff0ca84353a959db1045068e7f5ece873db20"
+        },
+        {
+          "path": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-23\\o\\outputs\\mug-paired-decode\\upstream\\raw.glb",
+          "sha256": "71e034d8e6e17819a39203d4d5960ffc651a0c6cdaccd18e4ee0adf8a8485522"
+        }
+      ]
+    },
+    {
+      "id": "candidate",
+      "requires": [
+        "extract"
+      ],
+      "status": "pass",
+      "attempts": 3,
+      "max_attempts": 3,
+      "evidence": [
+        {
+          "path": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-23\\o\\outputs\\mug-paired-decode\\accepted\\mug-geometry.glb",
+          "sha256": "9f1ef7857b276dbecf201a55e6134b8d32b3a36bf6f1ab465abc4e29be2dad87"
+        },
+        {
+          "path": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-23\\o\\outputs\\mug-paired-decode\\fairing\\fair-180\\metrics.json",
+          "sha256": "d1c119cb419329aee20589aa36fe7250885c3ba68a767adebb7b0d30a3b465a7"
+        },
+        {
+          "path": "D:\\workspace\\data\\repo\\ui-ai-generation\\image-blaster\\.claude\\scripts\\asset-pipeline\\reference-cases\\diffuse-white-mug-256\\mug-geometry.glb",
+          "sha256": "9f1ef7857b276dbecf201a55e6134b8d32b3a36bf6f1ab465abc4e29be2dad87"
+        }
+      ]
+    },
+    {
+      "id": "topology",
+      "requires": [
+        "candidate"
+      ],
+      "status": "pass",
+      "attempts": 1,
+      "max_attempts": 2,
+      "evidence": [
+        {
+          "path": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-23\\o\\outputs\\mug-paired-decode\\fairing\\fair-180\\clay-review\\topology.json",
+          "sha256": "37b12677ae4d351f9513623be214160e69db961435cdb415c290337d962664ca"
+        }
+      ],
+      "receipt": {
+        "path": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-23\\o\\outputs\\mug-paired-decode\\accepted\\inspection.json",
+        "sha256": "4cd91b4a863a24f14f7f8dc6a8a6d239f61d5b4eca3d7e5d42c0e402b40e95f1"
+      }
+    },
+    {
+      "id": "validator",
+      "requires": [
+        "candidate"
+      ],
+      "status": "pass",
+      "attempts": 1,
+      "max_attempts": 2,
+      "evidence": [
+        {
+          "path": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-23\\o\\outputs\\mug-paired-decode\\fairing\\fair-180\\gltf-validator.json",
+          "sha256": "cf696930193da26647a8afc26efda0e00268f33d5278eba972eead17c9a21c57"
+        }
+      ],
+      "receipt": {
+        "path": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-23\\o\\outputs\\mug-paired-decode\\accepted\\validation-receipt.json",
+        "sha256": "2f004fa6298a078629dad7281f299715ed392c0d0c50f7f47497288f5a687916"
+      }
+    },
+    {
+      "id": "budget",
+      "requires": [
+        "candidate"
+      ],
+      "status": "pass",
+      "attempts": 1,
+      "max_attempts": 2,
+      "evidence": [
+        {
+          "path": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-23\\o\\outputs\\mug-paired-decode\\accepted\\inspection.json",
+          "sha256": "4cd91b4a863a24f14f7f8dc6a8a6d239f61d5b4eca3d7e5d42c0e402b40e95f1"
+        }
+      ],
+      "receipt": {
+        "path": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-23\\o\\outputs\\mug-paired-decode\\accepted\\inspection.json",
+        "sha256": "4cd91b4a863a24f14f7f8dc6a8a6d239f61d5b4eca3d7e5d42c0e402b40e95f1"
+      }
+    },
+    {
+      "id": "render",
+      "requires": [
+        "candidate"
+      ],
+      "status": "pass",
+      "attempts": 1,
+      "max_attempts": 2,
+      "evidence": [
+        {
+          "path": "D:\\workspace\\data\\repo\\ui-ai-generation\\image-blaster\\.claude\\scripts\\asset-pipeline\\reference-cases\\diffuse-white-mug-256\\front.png",
+          "sha256": "28db1542a9149b2cc58e3e4be8cb9df8960c7c05b1734bf8342f9b780803a285"
+        },
+        {
+          "path": "D:\\workspace\\data\\repo\\ui-ai-generation\\image-blaster\\.claude\\scripts\\asset-pipeline\\reference-cases\\diffuse-white-mug-256\\three-quarter.png",
+          "sha256": "ec9f7cae5848602401667ac69859560f786e46fb21305950726e1cf2e499e485"
+        }
+      ]
+    },
+    {
+      "id": "visual",
+      "requires": [
+        "render",
+        "topology",
+        "validator",
+        "budget",
+        "preservation"
+      ],
+      "status": "pass",
+      "attempts": 1,
+      "max_attempts": 2,
+      "evidence": [
+        {
+          "path": "D:\\workspace\\data\\repo\\ui-ai-generation\\image-blaster\\.claude\\scripts\\asset-pipeline\\reference-cases\\diffuse-white-mug-256\\visual-review.json",
+          "sha256": "7e2a6aa0407667000b04e597ed20edf082ce759e8151cd62daa881fbc69d6e08"
+        }
+      ],
+      "receipt": {
+        "path": "D:\\workspace\\data\\repo\\ui-ai-generation\\image-blaster\\.claude\\scripts\\asset-pipeline\\reference-cases\\diffuse-white-mug-256\\visual-review.json",
+        "sha256": "7e2a6aa0407667000b04e597ed20edf082ce759e8151cd62daa881fbc69d6e08"
+      }
+    },
+    {
+      "id": "geometry",
+      "requires": [
+        "visual",
+        "reference"
+      ],
+      "status": "pass",
+      "attempts": 1,
+      "max_attempts": 2,
+      "evidence": [
+        {
+          "path": "D:\\workspace\\data\\repo\\ui-ai-generation\\image-blaster\\.claude\\scripts\\asset-pipeline\\reference-cases\\diffuse-white-mug-256\\visual-review.json",
+          "sha256": "7e2a6aa0407667000b04e597ed20edf082ce759e8151cd62daa881fbc69d6e08"
+        }
+      ]
+    },
+    {
+      "id": "preservation",
+      "requires": [
+        "candidate"
+      ],
+      "status": "pass",
+      "attempts": 1,
+      "max_attempts": 2,
+      "receipt": {
+        "path": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-23\\o\\outputs\\mug-paired-decode\\accepted\\inspection.json",
+        "sha256": "4cd91b4a863a24f14f7f8dc6a8a6d239f61d5b4eca3d7e5d42c0e402b40e95f1"
+      },
+      "evidence": [
+        {
+          "path": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-23\\o\\outputs\\mug-paired-decode\\silhouette-preservation.json",
+          "sha256": "36a296369d844d441f7642e47e5fb99412e8f5e6d704594c97122a2f800be843"
+        },
+        {
+          "path": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-23\\o\\outputs\\mug-paired-decode\\reproduction-check.json",
+          "sha256": "4e36d08a99d54d4caea14aa0d2c35c18884e8cd0230a7446f80df39153647c6b"
+        }
+      ]
+    }
+  ],
+  "loop_history": [
+    {
+      "hypothesis": "Bounded wall fairing removes surface bands while protecting semantic features",
+      "changed_factor": "Laplacian iterations=20; lambda .3 and protected-zone weights fixed",
+      "candidate_sha256": "34a48ab7628c5fcb1e8ef4362157d2e3351f88fec1ae25d07bc604d5d7b73b9f",
+      "decision": "reject",
+      "reason": "Residual body bands visible in matched clay review"
+    },
+    {
+      "hypothesis": "Bounded wall fairing removes surface bands while protecting semantic features",
+      "changed_factor": "Laplacian iterations=60; lambda .3 and protected-zone weights fixed",
+      "candidate_sha256": "36122bf192abfa229bdf2a887b7d31b0ac0c4040a155ee17e28011e73639dd07",
+      "decision": "reject",
+      "reason": "Residual body bands visible in matched clay review"
+    },
+    {
+      "hypothesis": "Bounded wall fairing removes surface bands while protecting semantic features",
+      "changed_factor": "Laplacian iterations=180; lambda .3 and protected-zone weights fixed",
+      "candidate_sha256": "9f1ef7857b276dbecf201a55e6134b8d32b3a36bf6f1ab465abc4e29be2dad87",
+      "decision": "accept",
+      "reason": "Acceptable smooth-prop wall after numeric and rendered review"
+    }
+  ],
+  "holds": [
+    "texturing",
+    "delegation"
+  ],
+  "schema_version": 2,
+  "subject": {
+    "object_id": "diffuse-white-mug",
+    "object_class": "upright-smooth-ceramic-mug",
+    "source": {
+      "path": "D:\\workspace\\data\\repo\\ui-ai-generation\\image-blaster\\.claude\\scripts\\asset-pipeline\\reference-cases\\diffuse-white-mug-256\\source-1k.png",
+      "sha256": "b2412b471921298e184bd02047ca78535db2d476cc2f862892f5c68f55000db8"
+    }
+  },
+  "case_binding": {
+    "path": "D:\\workspace\\data\\repo\\ui-ai-generation\\image-blaster\\.claude\\scripts\\asset-pipeline\\reference-cases\\diffuse-white-mug-256\\case-binding.json",
+    "sha256": "ba9b8da7f04fe11caeea390c04ec13993648ff40bb1fc4dae46e543b78d2365a"
+  }
+}
