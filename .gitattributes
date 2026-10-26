@@ -2,4 +2,4 @@
 * text=auto
 
 # Frozen qualification receipts are hashed as exact bytes.
-.claude/scripts/asset-pipeline/reference-cases/** -text
+.claude/scripts/asset-pipeline/reference-cases/** -text whitespace=cr-at-eol
