@@ -1,2 +1,5 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Frozen qualification receipts are hashed as exact bytes.
+.claude/scripts/asset-pipeline/reference-cases/** -text
